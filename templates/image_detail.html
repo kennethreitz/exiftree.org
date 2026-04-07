@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Image — ExifTree{% endblock %}
+{% block content %}
+<div x-data="{ img: null }" x-init="
+  const res = await fetch('/api/images/{{ image_id }}/');
+  if (res.ok) img = await res.json();
+">
+  <template x-if="img">
+    <div>
+      <div style="margin-bottom: 1.5rem;">
+        <img :src="img.thumbnail_large || img.thumbnail_medium || img.thumbnail_small"
+             :alt="img.title"
+             style="max-width: 100%; border-radius: var(--radius);">
+      </div>
+
+      <h1 style="font-size: 1.5rem;" x-text="img.title || 'Untitled'"></h1>
+      <p style="color: var(--text-muted); margin-top: 0.25rem;">
+        by <a :href="'/@' + img.user.username" x-text="'@' + img.user.username"></a>
+        · <span x-text="new Date(img.upload_date).toLocaleDateString()"></span>
+        · <span x-text="img.view_count + ' views'"></span>
+      </p>
+      <p x-show="img.description" x-text="img.description" style="margin-top: 0.75rem;"></p>
+
+      <template x-if="img.exif">
+        <div class="exif-bar">
+          <div class="exif-item" x-show="img.exif.camera">
+            <span class="exif-label">Camera</span>
+            <a :href="'/cameras/' + img.exif.camera?.slug?.split('-').slice(0,1).join('-') + '/' + img.exif.camera?.slug + '/'"
+               x-text="img.exif.camera?.display_name"></a>
+          </div>
+          <div class="exif-item" x-show="img.exif.lens">
+            <span class="exif-label">Lens</span>
+            <span x-text="img.exif.lens?.display_name"></span>
+          </div>
+          <div class="exif-item" x-show="img.exif.focal_length">
+            <span class="exif-label">Focal Length</span>
+            <span x-text="img.exif.focal_length + 'mm'"></span>
+          </div>
+          <div class="exif-item" x-show="img.exif.aperture">
+            <span class="exif-label">Aperture</span>
+            <span x-text="'f/' + img.exif.aperture"></span>
+          </div>
+          <div class="exif-item" x-show="img.exif.shutter_speed">
+            <span class="exif-label">Shutter Speed</span>
+            <span x-text="img.exif.shutter_speed + 's'"></span>
+          </div>
+          <div class="exif-item" x-show="img.exif.iso">
+            <span class="exif-label">ISO</span>
+            <span x-text="img.exif.iso"></span>
+          </div>
+          <div class="exif-item" x-show="img.exif.date_taken">
+            <span class="exif-label">Date Taken</span>
+            <span x-text="img.exif.date_taken ? new Date(img.exif.date_taken).toLocaleDateString() : ''"></span>
+          </div>
+        </div>
+      </template>
+    </div>
+  </template>
+
+  <div class="empty" x-show="!img">Loading...</div>
+</div>
+{% endblock %}

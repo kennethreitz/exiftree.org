@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Log in — ExifTree{% endblock %}
+{% block content %}
+<div class="auth-form" x-data="{ username: '', password: '', error: '' }">
+  <h1>Log in</h1>
+  <form @submit.prevent="
+    error = '';
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      localStorage.setItem('token', data.access);
+      window.location.href = '/';
+    } else {
+      const data = await res.json();
+      error = data.detail || 'Login failed';
+    }
+  ">
+    <div class="field">
+      <label>Username</label>
+      <input type="text" x-model="username" required autofocus>
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" x-model="password" required>
+    </div>
+    <p x-show="error" x-text="error" style="color: #f44; font-size: 0.9rem; margin-bottom: 0.5rem;"></p>
+    <button type="submit" class="btn btn-primary">Log in</button>
+  </form>
+  <p class="alt">Don't have an account? <a href="{% url 'register' %}">Sign up</a></p>
+</div>
+{% endblock %}

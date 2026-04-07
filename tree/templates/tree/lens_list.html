@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Lenses — ExifTree{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Lenses</h1>
+  <p>Browse photography by lens</p>
+</div>
+
+<div class="gear-grid" x-data="{ lenses: [] }" x-init="
+  const res = await fetch('/api/lenses');
+  lenses = await res.json();
+">
+  <template x-for="l in lenses" :key="l.id">
+    <a :href="'/lenses/' + l.slug + '/'" class="gear-card" style="color: inherit;">
+      <h3 x-text="l.display_name"></h3>
+      <div>
+        <span class="count" x-text="l.image_count + ' images'"></span>
+        <span class="count" x-show="l.max_aperture" x-text="' · f/' + l.max_aperture"></span>
+      </div>
+    </a>
+  </template>
+  <div class="empty" x-show="lenses.length === 0">No lenses yet. Upload some images!</div>
+</div>
+{% endblock %}

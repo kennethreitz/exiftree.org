@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ collection.title }} — ExifTree{% endblock %}
+{% block content %}
+<div x-data="{ col: null }" x-init="
+  const res = await fetch('/api/collections/{{ collection.id }}');
+  col = await res.json();
+">
+  <template x-if="col">
+    <div>
+      <div class="collection-header">
+        <h1 x-text="col.title"></h1>
+        <p class="desc" x-text="col.description" x-show="col.description"></p>
+        <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+          by <a :href="'/@' + col.user.username" x-text="'@' + col.user.username"></a>
+        </p>
+      </div>
+
+      <div class="image-grid">
+        <template x-for="img in col.images" :key="img.id">
+          <a :href="'/images/' + img.id + '/'" class="image-card">
+            <img :src="img.thumbnail_small" :alt="img.title" x-show="img.thumbnail_small">
+            <div class="overlay">
+              <div class="title" x-text="img.title || 'Untitled'"></div>
+            </div>
+          </a>
+        </template>
+        <div class="empty" x-show="col.images.length === 0">This collection is empty.</div>
+      </div>
+    </div>
+  </template>
+</div>
+{% endblock %}

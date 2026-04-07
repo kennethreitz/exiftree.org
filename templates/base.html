@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}ExifTree{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js"></script>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <nav class="site-nav">
+    <a href="/" class="nav-brand">ExifTree</a>
+    <div class="nav-links">
+      <a href="{% url 'tree:camera-list' %}">Cameras</a>
+      <a href="{% url 'tree:lens-list' %}">Lenses</a>
+      <a href="{% url 'search:search' %}">Search</a>
+      <a href="{% url 'groups:group-list' %}">Groups</a>
+    </div>
+    <div class="nav-auth" x-data="{ user: null }" x-init="
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const res = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+          if (res.ok) user = await res.json();
+        }
+      } catch(e) {}
+    ">
+      <template x-if="user">
+        <div class="nav-user">
+          <a :href="'/@' + user.username" x-text="'@' + user.username"></a>
+          <a href="{% url 'ingest:upload' %}">Upload</a>
+          <a href="#" @click.prevent="localStorage.removeItem('token'); location.reload()">Log out</a>
+        </div>
+      </template>
+      <template x-if="!user">
+        <div class="nav-guest">
+          <a href="{% url 'login' %}">Log in</a>
+          <a href="{% url 'register' %}" class="btn btn-primary">Sign up</a>
+        </div>
+      </template>
+    </div>
+  </nav>
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <p>ExifTree — browse photography through the gear that made it.</p>
+  </footer>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

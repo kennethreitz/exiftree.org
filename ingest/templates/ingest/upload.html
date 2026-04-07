@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Upload — ExifTree{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Upload</h1>
+</div>
+
+<div x-data="{
+  file: null, title: '', description: '', uploading: false, error: '', done: false, imageId: '',
+  dragover: false,
+  handleDrop(e) {
+    this.dragover = false;
+    if (e.dataTransfer.files.length) this.file = e.dataTransfer.files[0];
+  },
+  async upload() {
+    if (!this.file) { this.error = 'Select an image first'; return; }
+    this.uploading = true;
+    this.error = '';
+    const token = localStorage.getItem('token');
+    if (!token) { this.error = 'Please log in first'; this.uploading = false; return; }
+
+    const form = new FormData();
+    form.append('image', this.file);
+    form.append('title', this.title);
+    form.append('description', this.description);
+
+    try {
+      const res = await fetch('/api/images/upload', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token },
+        body: form,
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        this.error = data.detail || 'Upload failed';
+      } else {
+        const data = await res.json();
+        this.imageId = data.id;
+        this.done = true;
+      }
+    } catch(e) {
+      this.error = 'Upload failed';
+    }
+    this.uploading = false;
+  }
+}">
+  <div x-show="!done">
+    <div class="upload-zone"
+         :class="{ dragover }"
+         @click="$refs.fileInput.click()"
+         @dragover.prevent="dragover = true"
+         @dragleave="dragover = false"
+         @drop.prevent="handleDrop($event)">
+      <p x-show="!file">Drop an image here, or click to browse</p>
+      <p x-show="file" x-text="file?.name"></p>
+    </div>
+    <input type="file" accept="image/*" x-ref="fileInput" style="display:none"
+           @change="file = $event.target.files[0]">
+
+    <div style="display: flex; flex-direction: column; gap: 0.75rem; max-width: 500px;">
+      <input type="text" x-model="title" placeholder="Title (optional)"
+             style="padding: 0.5rem 0.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text);">
+      <textarea x-model="description" placeholder="Description (optional)" rows="3"
+                style="padding: 0.5rem 0.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); resize: vertical;"></textarea>
+      <button class="btn btn-primary" @click="upload()" :disabled="uploading"
+              x-text="uploading ? 'Uploading...' : 'Upload'"></button>
+      <p x-show="error" x-text="error" style="color: #f44;"></p>
+    </div>
+  </div>
+
+  <div x-show="done" class="empty">
+    <p>Upload complete! Your image is being processed.</p>
+    <a :href="'/images/' + imageId + '/'" class="btn btn-primary" style="margin-top: 1rem;">View image</a>
+  </div>
+</div>
+{% endblock %}

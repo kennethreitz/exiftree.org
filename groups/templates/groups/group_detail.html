@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ group.name }} — ExifTree{% endblock %}
+{% block content %}
+<div x-data="{ group: null, images: [] }" x-init="
+  const [gRes, iRes] = await Promise.all([
+    fetch('/api/groups/{{ group.slug }}'),
+    fetch('/api/groups/{{ group.slug }}/images'),
+  ]);
+  group = await gRes.json();
+  images = await iRes.json();
+">
+  <template x-if="group">
+    <div>
+      <div class="page-header">
+        <h1 x-text="group.name"></h1>
+        <p x-text="group.description" x-show="group.description"></p>
+        <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+          <span x-text="group.member_count + ' members'"></span>
+          · <a href="{% url 'groups:group-members' slug=group.slug %}">View members</a>
+        </p>
+      </div>
+
+      <div class="image-grid">
+        <template x-for="img in images" :key="img.id">
+          <a :href="'/images/' + img.id + '/'" class="image-card">
+            <img :src="img.thumbnail_small" :alt="img.title" x-show="img.thumbnail_small">
+            <div class="overlay">
+              <div class="title" x-text="img.title || 'Untitled'"></div>
+              <div class="meta" x-text="'by @' + img.user"></div>
+            </div>
+          </a>
+        </template>
+        <div class="empty" x-show="images.length === 0">No images in this group yet.</div>
+      </div>
+    </div>
+  </template>
+</div>
+{% endblock %}

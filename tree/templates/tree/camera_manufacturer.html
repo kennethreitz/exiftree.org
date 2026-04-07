@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ manufacturer }} Cameras — ExifTree{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>{{ manufacturer }}</h1>
+  <p>All camera models</p>
+</div>
+
+<div class="gear-grid">
+  {% for camera in cameras %}
+  <a href="{% url 'tree:camera-detail' manufacturer=camera.slug|cut:manufacturer model=camera.slug %}" class="gear-card" style="color: inherit;">
+    <h3>{{ camera.display_name }}</h3>
+    <span class="count">{{ camera.image_count }} images</span>
+  </a>
+  {% empty %}
+  <div class="empty">No cameras found for this manufacturer.</div>
+  {% endfor %}
+</div>
+{% endblock %}

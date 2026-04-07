@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}ExifTree — Browse photography through the gear that made it{% endblock %}
+{% block content %}
+<div style="text-align: center; padding: 3rem 0 2rem;">
+  <h1 style="font-size: 2.5rem; letter-spacing: -0.03em;">ExifTree</h1>
+  <p style="color: var(--text-muted); font-size: 1.1rem; margin-top: 0.5rem;">Browse photography through the gear that made it.</p>
+</div>
+
+<div x-data="{ cameras: [], lenses: [] }" x-init="
+  const [cRes, lRes] = await Promise.all([
+    fetch('/api/cameras'), fetch('/api/lenses')
+  ]);
+  cameras = (await cRes.json()).slice(0, 8);
+  lenses = (await lRes.json()).slice(0, 8);
+">
+  <section style="margin-bottom: 3rem;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1rem;">
+      <h2 style="font-size: 1.25rem;">Cameras</h2>
+      <a href="{% url 'tree:camera-list' %}" style="font-size: 0.85rem;">View all</a>
+    </div>
+    <div class="gear-grid">
+      <template x-for="c in cameras" :key="c.id">
+        <a :href="'/cameras/' + c.manufacturer.toLowerCase().replace(/\s+/g, '-') + '/'" class="gear-card" style="color: inherit;">
+          <h3 x-text="c.display_name"></h3>
+          <span class="count" x-text="c.image_count + ' images'"></span>
+        </a>
+      </template>
+    </div>
+  </section>
+
+  <section style="margin-bottom: 3rem;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1rem;">
+      <h2 style="font-size: 1.25rem;">Lenses</h2>
+      <a href="{% url 'tree:lens-list' %}" style="font-size: 0.85rem;">View all</a>
+    </div>
+    <div class="gear-grid">
+      <template x-for="l in lenses" :key="l.id">
+        <a :href="'/lenses/' + l.manufacturer.toLowerCase().replace(/\s+/g, '-') + '/' + l.slug + '/'" class="gear-card" style="color: inherit;">
+          <h3 x-text="l.display_name"></h3>
+          <span class="count" x-text="l.image_count + ' images'"></span>
+        </a>
+      </template>
+    </div>
+  </section>
+</div>
+{% endblock %}

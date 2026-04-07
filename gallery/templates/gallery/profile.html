@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}@{{ profile_user.username }} — ExifTree{% endblock %}
+{% block content %}
+<div class="profile-header" x-data="{ user: null }" x-init="
+  const res = await fetch('/api/users/{{ profile_user.username }}');
+  user = await res.json();
+">
+  <template x-if="user">
+    <div class="profile-header">
+      <img :src="user.avatar || ''" class="avatar" x-show="user.avatar">
+      <div>
+        <h1 x-text="'@' + user.username"></h1>
+        <p class="bio" x-text="user.bio" x-show="user.bio"></p>
+        <a :href="user.website" x-text="user.website" x-show="user.website" target="_blank"></a>
+      </div>
+    </div>
+  </template>
+</div>
+
+<div class="image-grid" x-data="{ images: [] }" x-init="
+  const res = await fetch('/api/users/{{ profile_user.username }}/images');
+  images = await res.json();
+">
+  <template x-for="img in images" :key="img.id">
+    <a :href="'/images/' + img.id + '/'" class="image-card">
+      <img :src="img.thumbnail_small" :alt="img.title" x-show="img.thumbnail_small">
+      <div class="overlay">
+        <div class="title" x-text="img.title || 'Untitled'"></div>
+      </div>
+    </a>
+  </template>
+  <div class="empty" x-show="images.length === 0">No images yet.</div>
+</div>
+{% endblock %}

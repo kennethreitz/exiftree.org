@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Cameras — ExifTree{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Cameras</h1>
+  <p>Browse photography by camera body</p>
+</div>
+
+<div class="gear-grid" x-data="{ cameras: [] }" x-init="
+  const res = await fetch('/api/cameras');
+  cameras = await res.json();
+">
+  <template x-for="c in cameras" :key="c.id">
+    <a :href="'/cameras/' + c.slug.split('-').slice(0, c.manufacturer.split(' ').length).join('-') + '/'" class="gear-card" style="color: inherit;">
+      <h3 x-text="c.display_name"></h3>
+      <span class="count" x-text="c.image_count + ' images'"></span>
+    </a>
+  </template>
+  <div class="empty" x-show="cameras.length === 0">No cameras yet. Upload some images!</div>
+</div>
+{% endblock %}

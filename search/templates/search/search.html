@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Search — ExifTree{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Search</h1>
+  <p>Find images by EXIF data</p>
+</div>
+
+<div x-data="{
+  results: [], total: 0, cameras: [], lenses: [],
+  q: '', camera: '', lens: '', focal_min: '', focal_max: '',
+  aperture_min: '', aperture_max: '', iso_min: '', iso_max: '',
+  async search() {
+    const params = new URLSearchParams();
+    if (this.q) params.set('q', this.q);
+    if (this.camera) params.set('camera', this.camera);
+    if (this.lens) params.set('lens', this.lens);
+    if (this.focal_min) params.set('focal_min', this.focal_min);
+    if (this.focal_max) params.set('focal_max', this.focal_max);
+    if (this.aperture_min) params.set('aperture_min', this.aperture_min);
+    if (this.aperture_max) params.set('aperture_max', this.aperture_max);
+    if (this.iso_min) params.set('iso_min', this.iso_min);
+    if (this.iso_max) params.set('iso_max', this.iso_max);
+    const res = await fetch('/api/search?' + params);
+    const data = await res.json();
+    this.results = data.images;
+    this.total = data.total;
+  }
+}" x-init="
+  const [cRes, lRes] = await Promise.all([
+    fetch('/api/cameras'), fetch('/api/lenses')
+  ]);
+  cameras = await cRes.json();
+  lenses = await lRes.json();
+  search();
+">
+  <form class="search-form" @submit.prevent="search()">
+    <div class="field">
+      <label>Keyword</label>
+      <input type="text" x-model="q" placeholder="Title or description...">
+    </div>
+    <div class="field">
+      <label>Camera</label>
+      <select x-model="camera">
+        <option value="">Any</option>
+        <template x-for="c in cameras" :key="c.id">
+          <option :value="c.id" x-text="c.display_name"></option>
+        </template>
+      </select>
+    </div>
+    <div class="field">
+      <label>Lens</label>
+      <select x-model="lens">
+        <option value="">Any</option>
+        <template x-for="l in lenses" :key="l.id">
+          <option :value="l.id" x-text="l.display_name"></option>
+        </template>
+      </select>
+    </div>
+    <div class="field">
+      <label>Focal (mm)</label>
+      <div style="display: flex; gap: 0.25rem;">
+        <input type="number" x-model="focal_min" placeholder="min" style="width: 5rem;">
+        <input type="number" x-model="focal_max" placeholder="max" style="width: 5rem;">
+      </div>
+    </div>
+    <div class="field">
+      <label>Aperture (f/)</label>
+      <div style="display: flex; gap: 0.25rem;">
+        <input type="number" step="0.1" x-model="aperture_min" placeholder="min" style="width: 5rem;">
+        <input type="number" step="0.1" x-model="aperture_max" placeholder="max" style="width: 5rem;">
+      </div>
+    </div>
+    <div class="field">
+      <label>ISO</label>
+      <div style="display: flex; gap: 0.25rem;">
+        <input type="number" x-model="iso_min" placeholder="min" style="width: 5rem;">
+        <input type="number" x-model="iso_max" placeholder="max" style="width: 5rem;">
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Search</button>
+  </form>
+
+  <p style="color: var(--text-muted); margin-bottom: 1rem; font-size: 0.85rem;" x-text="total + ' results'"></p>
+
+  <div class="image-grid">
+    <template x-for="img in results" :key="img.id">
+      <a :href="'/images/' + img.id + '/'" class="image-card">
+        <img :src="img.thumbnail_small" :alt="img.title" x-show="img.thumbnail_small">
+        <div class="overlay">
+          <div class="title" x-text="img.title || 'Untitled'"></div>
+          <div class="meta" x-text="'by @' + img.user"></div>
+        </div>
+      </a>
+    </template>
+    <div class="empty" x-show="results.length === 0">No images match your filters.</div>
+  </div>
+</div>
+{% endblock %}

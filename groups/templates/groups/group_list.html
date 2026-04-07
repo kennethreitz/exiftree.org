@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Groups — ExifTree{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Groups</h1>
+  <p>Community spaces for photographers</p>
+</div>
+
+<div class="gear-grid" x-data="{ groups: [] }" x-init="
+  const res = await fetch('/api/groups');
+  groups = await res.json();
+">
+  <template x-for="g in groups" :key="g.id">
+    <a :href="'/groups/' + g.slug + '/'" class="group-card" style="color: inherit;">
+      <h3 x-text="g.name"></h3>
+      <p class="desc" x-text="g.description"></p>
+      <span class="stats" x-text="g.member_count + ' members'"></span>
+    </a>
+  </template>
+  <div class="empty" x-show="groups.length === 0">No groups yet.</div>
+</div>
+{% endblock %}
