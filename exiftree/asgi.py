@@ -1,16 +1,22 @@
 """
 ASGI config for exiftree project.
 
-It exposes the ASGI callable as a module-level variable named ``application``.
+Bolt is the root server — Django is mounted into it for admin,
+templates, and traditional views. The API is handled natively by Bolt.
 
-For more information on this file, see
-https://docs.djangoproject.com/en/6.0/howto/deployment/asgi/
+Run with: python manage.py runbolt --dev
 """
 
 import os
 
-from django.core.asgi import get_asgi_application
+import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "exiftree.settings")
+django.setup()
 
-application = get_asgi_application()
+from exiftree.api import api  # noqa: E402
+
+# Mount Django's ASGI app for admin + template views
+api.mount_django("/", clear_root_path=True)
+
+application = api
