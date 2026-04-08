@@ -1,4 +1,4 @@
-.PHONY: sync run migrate makemigrations bolt
+.PHONY: sync run migrate makemigrations bolt db
 
 sync:
 	uv sync
@@ -14,3 +14,6 @@ migrate: sync
 
 makemigrations: sync
 	uv run python manage.py makemigrations
+
+db:
+	fly proxy 5432 -a exiftree-db
