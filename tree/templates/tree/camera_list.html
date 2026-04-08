@@ -6,19 +6,52 @@
   <p>Browse photography by camera body</p>
 </div>
 
-<div class="gear-grid" x-data="{
+<div x-data="{
   cameras: [],
+  allCameras: [],
+  brands: [],
+  selectedBrand: '',
+  query: '',
   async init() {
     const res = await fetch('/api/cameras');
-    this.cameras = await res.json();
+    this.allCameras = await res.json();
+    this.brands = [...new Set(this.allCameras.map(c => c.manufacturer))].sort();
+    this.filter();
+  },
+  filter() {
+    let filtered = this.allCameras;
+    if (this.selectedBrand) filtered = filtered.filter(c => c.manufacturer === this.selectedBrand);
+    if (this.query) {
+      const q = this.query.toLowerCase();
+      filtered = filtered.filter(c => c.display_name.toLowerCase().includes(q));
+    }
+    this.cameras = filtered;
   }
 }">
-  <template x-for="c in cameras" :key="c.id">
-    <a :href="'/cameras/' + c.slug + '/'" class="gear-card" style="color: inherit;">
-      <h3 x-text="c.display_name"></h3>
-      <span class="count" x-text="c.image_count + ' images'"></span>
-    </a>
-  </template>
-  <div class="empty" x-show="cameras.length === 0">No cameras yet. Upload some images!</div>
+  <!-- Brand pills -->
+  <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
+    <button class="brand-pill" :class="!selectedBrand ? 'brand-pill-active' : ''"
+            @click="selectedBrand = ''; filter()">All</button>
+    <template x-for="b in brands" :key="b">
+      <button class="brand-pill" :class="selectedBrand === b ? 'brand-pill-active' : ''"
+              @click="selectedBrand = b; filter()" x-text="b"></button>
+    </template>
+  </div>
+
+  <!-- Search -->
+  <input type="text" x-model="query" @input="filter()" placeholder="Filter cameras..."
+    style="width: 100%; max-width: 400px; padding: 0.5rem 0.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); margin-bottom: 1.5rem;">
+
+  <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;" x-text="cameras.length + ' cameras'"></p>
+
+  <div class="gear-grid">
+    <template x-for="c in cameras" :key="c.id">
+      <a :href="'/cameras/' + c.slug + '/'" class="gear-card" style="color: inherit;">
+        <h3 x-text="c.display_name"></h3>
+        <span class="count" x-text="c.image_count + ' images'"></span>
+      </a>
+    </template>
+    <div class="empty" x-show="cameras.length === 0" style="grid-column: 1 / -1;">No cameras match your filter.</div>
+  </div>
 </div>
 {% endblock %}

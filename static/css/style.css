@@ -163,6 +163,21 @@ a:hover { color: var(--accent-hover); }
   transition: border-color 0.15s;
 }
 .gear-card:hover { border-color: var(--text-muted); }
+
+/* Brand filter pills */
+.brand-pill {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.brand-pill:hover { border-color: var(--text-muted); color: var(--text); }
+.brand-pill-active { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 600; }
+.brand-pill-active:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 .gear-card h3 { font-size: 1rem; margin-bottom: 0.25rem; }
 .gear-card .count { color: var(--text-muted); font-size: 0.85rem; }
 
