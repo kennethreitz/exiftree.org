@@ -9,12 +9,14 @@
 <div x-data="{
   cameras: [],
   lenses: [],
+  users: [],
   async init() {
-    const [cRes, lRes] = await Promise.all([
-      fetch('/api/cameras'), fetch('/api/lenses')
+    const [cRes, lRes, uRes] = await Promise.all([
+      fetch('/api/cameras'), fetch('/api/lenses'), fetch('/api/users')
     ]);
     this.cameras = (await cRes.json()).filter(c => c.image_count >= 32).slice(0, 8);
     this.lenses = (await lRes.json()).filter(l => l.image_count >= 32).slice(0, 8);
+    this.users = (await uRes.json()).slice(0, 8);
   }
 }">
   <section style="margin-bottom: 3rem;">
@@ -42,6 +44,21 @@
         <a :href="'/lenses/' + l.slug + '/'" class="gear-card" style="color: inherit;">
           <h3 x-text="l.display_name"></h3>
           <span class="count" x-text="l.image_count + ' images'"></span>
+        </a>
+      </template>
+    </div>
+  </section>
+
+  <section style="margin-bottom: 3rem;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1rem;">
+      <h2 style="font-size: 1.25rem;">Users</h2>
+      <a href="{% url 'users' %}" style="font-size: 0.85rem;">View all</a>
+    </div>
+    <div class="gear-grid">
+      <template x-for="u in users" :key="u.id">
+        <a :href="'/@' + u.username" class="gear-card" style="color: inherit;">
+          <h3 x-text="'@' + u.username"></h3>
+          <p class="count" x-text="u.bio" x-show="u.bio" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></p>
         </a>
       </template>
     </div>

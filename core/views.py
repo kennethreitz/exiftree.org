@@ -13,6 +13,10 @@ def dashboard(request):
     return render(request, 'dashboard.html')
 
 
+def users_list(request):
+    return render(request, 'users.html')
+
+
 def register_view(request):
     return render(request, 'registration/register.html')
 

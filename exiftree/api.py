@@ -585,6 +585,18 @@ async def delete_image(request: Request, image_id: str):
 # Users (public profiles)
 # ---------------------------------------------------------------------------
 
+@users_router.get("")
+@rate_limit(rps=RATE_READ, key="ip")
+async def list_users(q: str = '') -> list[UserSchema]:
+    users = []
+    qs = User.objects.order_by('-created_at')
+    if q:
+        qs = qs.filter(username__icontains=q)
+    async for u in qs[:50]:
+        users.append(_user_schema(u))
+    return users
+
+
 @users_router.get("/{username}")
 @rate_limit(rps=RATE_READ, key="ip")
 async def get_user(username: str) -> UserSchema:
