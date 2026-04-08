@@ -10,7 +10,7 @@ run: sync
 	fly proxy 5432 -a exiftree-db &
 	redis-server --daemonize yes 2>/dev/null || true
 	sleep 1
-	uv run python manage.py collectstatic --noinput -q
+	uv run python manage.py collectstatic --noinput 2>/dev/null
 	uv run python manage.py runbolt --dev
 	kill %1 2>/dev/null || true
 	redis-cli shutdown 2>/dev/null || true
