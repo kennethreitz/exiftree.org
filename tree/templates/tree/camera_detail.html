@@ -12,18 +12,7 @@
     <a href="/images/{{ img.id }}/" class="image-card">
       {% if img.thumbnail_medium %}<img src="{{ img.thumbnail_medium.url }}" alt="{{ img.title }}">
       {% elif img.thumbnail_small %}<img src="{{ img.thumbnail_small.url }}" alt="{{ img.title }}">{% endif %}
-      <div class="overlay">
-        <div class="exif-row">
-          <div class="exif-left">
-            {% if img.exif and img.exif.lens %}<span>{{ img.exif.lens.display_name }}</span>{% endif %}
-          </div>
-          <div class="exif-right">
-            {% if img.exif.focal_length %}<span>{{ img.exif.focal_length }}mm</span>{% endif %}
-            {% if img.exif.aperture %}<span>f/{{ img.exif.aperture }}</span>{% endif %}
-            {% if img.exif.iso %}<span>ISO {{ img.exif.iso }}</span>{% endif %}
-          </div>
-        </div>
-      </div>
+      {% include "includes/image_overlay.html" %}
     </a>
     {% if not SINGLE_TENANT %}<a href="/@{{ img.user.username }}" class="image-card-user">@{{ img.user.username }}</a>{% endif %}
   </div>

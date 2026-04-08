@@ -143,23 +143,12 @@ a:hover { color: var(--accent-hover); }
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 0.4rem 0.6rem;
-  background: linear-gradient(transparent, rgba(0,0,0,0.85));
-  font-size: 0.7rem;
-  opacity: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  padding: 0.5rem 0.6rem;
+  background: linear-gradient(transparent, rgba(0,0,0,0.8));
+  color: rgba(255,255,255,0.75);
+  font-size: 0.75rem;
+  line-height: 1.4;
 }
-.image-card .overlay .exif-row {
-  display: flex;
-  justify-content: space-between;
-  color: rgba(255,255,255,0.8);
-}
-.image-card .overlay .exif-left, .image-card .overlay .exif-right {
-  display: flex; gap: 0.35rem;
-}
-.image-card .overlay .exif-right { color: rgba(255,255,255,0.6); }
 .image-card-user {
   display: block;
   padding: 0.35rem 0;

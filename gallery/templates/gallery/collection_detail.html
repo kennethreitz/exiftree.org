@@ -83,18 +83,7 @@
             <div>
               <div class="image-card" @click="openLightbox(col.images, i)" style="cursor: pointer;">
                 <img :src="img.thumbnail_medium || img.thumbnail_small" :alt="img.title">
-                <div class="overlay">
-                  <div class="exif-row">
-                    <div class="exif-left">
-                      <span x-text="img.camera" x-show="img.camera"></span>
-                    </div>
-                    <div class="exif-right">
-                      <span x-show="img.focal_length" x-text="img.focal_length + 'mm'"></span>
-                      <span x-show="img.aperture" x-text="'f/' + img.aperture"></span>
-                      <span x-show="img.iso" x-text="'ISO ' + img.iso"></span>
-                    </div>
-                  </div>
-                </div>
+                {% include "includes/image_overlay.html" %}
               </div>
               {% if not SINGLE_TENANT %}<a :href="'/@' + img.user" class="image-card-user" x-text="'@' + img.user"></a>{% endif %}
             </div>
