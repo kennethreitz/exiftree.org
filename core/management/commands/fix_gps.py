@@ -1,39 +1,41 @@
 from django.core.management.base import BaseCommand
 
-from core.exif import extract_exif
 from core.models import ExifData
 
 
 class Command(BaseCommand):
-    help = "Re-extract GPS coordinates from originals to fix sign issues"
+    help = "Fix GPS longitude sign for photos with incorrect E ref in Western hemisphere"
+
+    def add_arguments(self, parser):
+        parser.add_argument('--dry-run', action='store_true')
 
     def handle(self, *args, **options):
-        qs = ExifData.objects.filter(gps_longitude__isnull=False).select_related('image')
+        dry_run = options['dry_run']
+        # Only fix images where raw ref says E but location is clearly Western hemisphere
+        qs = ExifData.objects.filter(gps_longitude__isnull=False, gps_longitude__gt=0)
         total = qs.count()
         fixed = 0
 
-        self.stdout.write(f"Checking {total} images with GPS data...")
+        self.stdout.write(f"Checking {total} images with positive longitude...")
 
         for e in qs:
-            try:
-                f = e.image.original
-                f.open('rb')
-                exif = extract_exif(f)
-                f.close()
+            lon = float(e.gps_longitude)
+            lat = float(e.gps_latitude) if e.gps_latitude else 0
+            raw = e.raw_data or {}
+            lon_ref = raw.get('GPS GPSLongitudeRef', '')
 
-                changed = False
-                if exif['gps_latitude'] is not None and exif['gps_latitude'] != e.gps_latitude:
-                    e.gps_latitude = exif['gps_latitude']
-                    changed = True
-                if exif['gps_longitude'] is not None and exif['gps_longitude'] != e.gps_longitude:
-                    e.gps_longitude = exif['gps_longitude']
-                    changed = True
+            # Only fix if ref says E but coordinates are clearly in Americas
+            # Americas: lat 15-72N, lon 50-170 (which should be negative)
+            # Skip Southern hemisphere (Australia at lon 151 is correct with E)
+            if lon_ref == 'E' and lat > 15 and lon > 50 and lon < 170:
+                if dry_run:
+                    self.stdout.write(f"  Would fix {e.image_id}: ({lat}, {lon}) -> ({lat}, {-lon})")
+                else:
+                    e.gps_longitude = -lon
+                    e.save(update_fields=['gps_longitude'])
+                    self.stdout.write(f"  Fixed {e.image_id}: ({lat}, {-lon})")
+                fixed += 1
 
-                if changed:
-                    e.save(update_fields=['gps_latitude', 'gps_longitude'])
-                    fixed += 1
-                    self.stdout.write(f"  Fixed {e.image_id}: ({e.gps_latitude}, {e.gps_longitude})")
-            except Exception as ex:
-                self.stdout.write(self.style.WARNING(f"  Error {e.image_id}: {ex}"))
-
-        self.stdout.write(self.style.SUCCESS(f"Fixed {fixed} of {total} images"))
+        self.stdout.write(self.style.SUCCESS(
+            f"{'Would fix' if dry_run else 'Fixed'} {fixed} of {total} images"
+        ))
