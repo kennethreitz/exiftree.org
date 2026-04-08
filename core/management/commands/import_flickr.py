@@ -79,8 +79,11 @@ class Command(BaseCommand):
             return
 
         self.session = requests.Session()
+        adapter = requests.adapters.HTTPAdapter(pool_connections=10, pool_maxsize=10)
+        self.session.mount('https://', adapter)
+        self.session.mount('http://', adapter)
         self.api_key = api_key
-        self.workers = options['workers']
+        self.workers = min(options['workers'], 4)  # cap to avoid fd exhaustion
 
         # Load resume state
         self.imported_ids = set()
@@ -145,6 +148,7 @@ class Command(BaseCommand):
                 # Parallel download + import
                 imported = self._import_batch(pending, photos, collection)
                 total_imported += imported
+                self._save_resume()  # save after each set
 
                 if max_photos and total_imported >= max_photos:
                     self.stdout.write(f"\nReached max ({max_photos}), stopping.")
@@ -244,10 +248,12 @@ class Command(BaseCommand):
                     content_hash=content_hash,
                     is_processing=True,
                 )
+                del contents  # free memory
 
-                # Process
+                # Process — close file handles after
                 try:
                     process_image(img)
+                    img.original.close()
 
                     # Fill missing EXIF date with Flickr date
                     if date_taken and hasattr(img, 'exif'):
