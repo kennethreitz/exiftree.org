@@ -16,4 +16,5 @@ dependencies = [
     "pillow>=12.2.0",
     "psycopg[binary]>=3.3.3",
     "redis>=7.4.0",
+    "requests>=2.33.1",
 ]

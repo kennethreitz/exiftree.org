@@ -73,17 +73,24 @@ document.getElementById('import-form').addEventListener('submit', async function
         max: parseInt(document.getElementById('flickr-max').value) || 0,
       }),
     });
-    var data = await res.json();
+    var text = await res.text();
+    var data;
+    try { data = JSON.parse(text); } catch(e) { data = { detail: text }; }
+
     if (res.ok) {
       status.textContent = data.message || 'Import started! Check back soon.';
       logOutput.textContent = data.detail || 'Task dispatched to background worker.';
     } else {
       error.style.display = 'block';
-      error.textContent = data.detail || 'Import failed';
+      if (data.detail && typeof data.detail === 'object') {
+        error.textContent = JSON.stringify(data.detail, null, 2);
+      } else {
+        error.textContent = data.detail || data.message || text || 'Import failed';
+      }
     }
   } catch(err) {
     error.style.display = 'block';
-    error.textContent = 'Request failed: ' + err.message;
+    error.textContent = 'Request failed: ' + err.message + ' (try Chrome or disable browser extensions)';
   }
 
   btn.disabled = false;
