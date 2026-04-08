@@ -39,10 +39,9 @@
   }
 }" @year-changed.window="year = $event.detail.year; load()">
   <div class="image-grid" style="grid-template-columns: repeat(4, 1fr);">
-    <template x-for="(img, i) in images" :key="img.id">
+    <template x-for="img in images" :key="img.id">
       <div>
-        <div class="image-card" style="cursor: pointer;"
-             @click="openLightbox(images, i)">
+        <a :href="'/images/' + img.id + '/'" class="image-card">
           <img :src="img.thumbnail_medium || img.thumbnail_small" :alt="img.title">
           <div class="overlay">
             <div class="exif-row">
@@ -54,7 +53,7 @@
               </div>
             </div>
           </div>
-        </div>
+        </a>
         {% if not SINGLE_TENANT %}<a :href="'/@' + img.user" class="image-card-user" x-text="'@' + img.user"></a>{% endif %}
       </div>
     </template>
