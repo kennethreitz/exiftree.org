@@ -446,6 +446,16 @@ async def lens_images(lens_id: str) -> list[ImageListSchema]:
 # Images
 # ---------------------------------------------------------------------------
 
+@images_router.get("/explore")
+@rate_limit(rps=RATE_READ, key="ip")
+async def explore_images(limit: int = 48) -> list[ImageListSchema]:
+    images = []
+    qs = _public_images_qs().order_by('?')[:limit]
+    async for img in qs:
+        images.append(_image_list_schema(img))
+    return images
+
+
 @images_router.get("/{image_id}")
 @rate_limit(rps=RATE_READ, key="ip")
 async def get_image(image_id: str):
