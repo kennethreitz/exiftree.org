@@ -89,8 +89,7 @@
       <a :href="'/images/' + img.id + '/'" class="image-card">
         <img :src="img.thumbnail_small" :alt="img.title" x-show="img.thumbnail_small">
         <div class="overlay">
-          <div class="title" x-text="img.title || 'Untitled'"></div>
-          <div class="meta" x-text="'by @' + img.user"></div>
+            <div class="meta" x-text="'by @' + img.user"></div>
         </div>
       </a>
     </template>

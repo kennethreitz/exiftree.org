@@ -90,7 +90,6 @@
             <a :href="'/images/' + img.id + '/'">
               <img :src="img.thumbnail_small" :alt="img.title" x-show="img.thumbnail_small">
               <div class="overlay">
-                <div class="title" x-text="img.title || 'Untitled'"></div>
               </div>
             </a>
             <button @click="deleteImage(img.id)"

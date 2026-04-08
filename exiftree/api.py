@@ -423,11 +423,14 @@ async def lens_images(lens_id: str) -> list[ImageListSchema]:
 # ---------------------------------------------------------------------------
 
 @images_router.get("/{image_id}")
-async def get_image(image_id: str) -> ImageSchema:
-    img = await (
-        Image.objects.select_related('user', 'exif', 'exif__camera', 'exif__lens')
-        .aget(id=image_id, visibility=Image.Visibility.PUBLIC, is_processing=False)
-    )
+async def get_image(image_id: str):
+    try:
+        img = await (
+            Image.objects.select_related('user', 'exif', 'exif__camera', 'exif__lens')
+            .aget(id=image_id, visibility=Image.Visibility.PUBLIC)
+        )
+    except Image.DoesNotExist:
+        return Response({"detail": "Image not found"}, status_code=404)
     # Increment view count
     await Image.objects.filter(id=image_id).aupdate(view_count=models.F('view_count') + 1)
     img.view_count += 1
