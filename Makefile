@@ -4,7 +4,10 @@ sync:
 	uv sync
 
 run: sync
-	uv run python manage.py runserver
+	fly proxy 5432 -a exiftree-db &
+	sleep 1
+	uv run python manage.py runbolt --dev
+	kill %1 2>/dev/null || true
 
 bolt: sync
 	uv run python manage.py runbolt --dev
