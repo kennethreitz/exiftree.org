@@ -1,1 +1,1 @@
-{% if img.exif %}<div class="overlay">{% if img.exif.focal_length %}{{ img.exif.focal_length }}mm{% endif %}{% if img.exif.aperture %} f/{{ img.exif.aperture }}{% endif %}{% if img.exif.iso %} ISO {{ img.exif.iso }}{% endif %}</div>{% endif %}
+{% if img.exif %}<div class="overlay">{% if img.exif.camera %}{{ img.exif.camera.manufacturer }}{% endif %}{% if img.exif.focal_length %} {{ img.exif.focal_length }}mm{% endif %}{% if img.exif.aperture %} f/{{ img.exif.aperture }}{% endif %}</div>{% endif %}
