@@ -148,7 +148,26 @@
     <template x-if="creatingCollection">
       <div style="display: flex; gap: 0.5rem; align-items: end;">
         <input type="text" x-model="newCollectionName" placeholder="Collection name"
+          @keydown.enter.prevent="if (newCollectionName.trim()) { async function c() {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/collections', {
+              method: 'POST',
+              headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ title: newCollectionName }),
+            });
+            if (res.ok) { const col = await res.json(); collections.unshift(col); selectedCollection = col.id; newCollectionName = ''; creatingCollection = false; }
+          }; c(); }"
           style="padding: 0.5rem 0.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text);">
+        <button class="btn btn-primary" @click="async function c() {
+            if (!newCollectionName.trim()) return;
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/collections', {
+              method: 'POST',
+              headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ title: newCollectionName }),
+            });
+            if (res.ok) { const col = await res.json(); collections.unshift(col); selectedCollection = col.id; newCollectionName = ''; creatingCollection = false; }
+          }; c();">Create</button>
         <button class="btn" @click="creatingCollection = false; newCollectionName = ''">Cancel</button>
       </div>
     </template>
