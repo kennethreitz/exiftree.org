@@ -29,13 +29,15 @@
       style="width: 100px; padding: 0.5rem 0.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text);">
   </div>
   <button type="submit" class="btn btn-primary" id="import-btn">Start Import</button>
-  <p id="import-status" style="margin-top: 1rem; color: var(--text-muted); display: none;"></p>
   <p id="import-error" style="margin-top: 0.5rem; color: #f44; display: none;"></p>
+  <p style="margin-top: 1rem; color: var(--text-muted); font-size: 0.85rem;">
+    Or run from the terminal for real-time progress:<br>
+    <code style="background: var(--surface); padding: 0.25rem 0.5rem; border-radius: var(--radius); font-size: 0.8rem;">uv run python manage.py import_flickr kennethreitz</code>
+  </p>
 </form>
 
-<div id="import-log" style="margin-top: 2rem; display: none;">
-  <h2 style="font-size: 1.1rem; margin-bottom: 0.5rem;">Import Log</h2>
-  <pre id="log-output" style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; max-height: 400px; overflow-y: auto; font-size: 0.8rem; color: var(--text-muted); white-space: pre-wrap;"></pre>
+<div id="import-status" style="margin-top: 2rem; display: none;">
+  <p style="color: var(--accent);" id="status-text"></p>
 </div>
 {% endblock %}
 {% block scripts %}
@@ -43,21 +45,18 @@
 document.getElementById('import-form').addEventListener('submit', async function(e) {
   e.preventDefault();
   var btn = document.getElementById('import-btn');
-  var status = document.getElementById('import-status');
+  var statusDiv = document.getElementById('import-status');
+  var statusText = document.getElementById('status-text');
   var error = document.getElementById('import-error');
-  var logDiv = document.getElementById('import-log');
-  var logOutput = document.getElementById('log-output');
   var token = localStorage.getItem('token');
 
   if (!token) { window.location.href = '/login/'; return; }
 
   btn.disabled = true;
-  btn.textContent = 'Importing...';
-  status.style.display = 'block';
-  status.textContent = 'Starting import...';
+  btn.textContent = 'Importing... (this may take a while)';
+  statusDiv.style.display = 'block';
+  statusText.textContent = 'Connecting to Flickr...';
   error.style.display = 'none';
-  logDiv.style.display = 'block';
-  logOutput.textContent = '';
 
   try {
     var res = await fetch('/api/import/flickr', {
@@ -78,8 +77,11 @@ document.getElementById('import-form').addEventListener('submit', async function
     try { data = JSON.parse(text); } catch(e) { data = { detail: text }; }
 
     if (res.ok) {
-      status.textContent = data.message || 'Import started! Check back soon.';
-      logOutput.textContent = data.detail || 'Task dispatched to background worker.';
+      statusDiv.style.display = 'block';
+      statusText.textContent = data.message || 'Import complete!';
+      if (data.detail) {
+        statusText.textContent += '\n' + data.detail.substring(0, 500);
+      }
     } else {
       error.style.display = 'block';
       if (data.detail && typeof data.detail === 'object') {
