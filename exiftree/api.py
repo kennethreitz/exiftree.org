@@ -26,11 +26,19 @@ from django_bolt import (
     create_jwt_for_user,
 )
 from django_bolt.params import File
+from django_bolt import rate_limit
 
 from core.models import Camera, ExifData, Image, Lens, User
 from gallery.models import Collection, CollectionImage
 from groups.models import Group, GroupImage, GroupMembership
 from ingest.tasks import process_image_task
+
+# Rate limits (requests per second per IP)
+RATE_READ = 100
+RATE_WRITE = 20
+RATE_AUTH = 10
+RATE_UPLOAD = 5
+RATE_SEARCH = 50
 
 # ---------------------------------------------------------------------------
 # Schemas
@@ -305,6 +313,7 @@ search_router = Router(prefix="/api/search", tags=["search"])
 # ---------------------------------------------------------------------------
 
 @auth_router.post("/register")
+@rate_limit(rps=RATE_AUTH, key="ip")
 async def register(data: RegisterInput):
     if await User.objects.filter(username=data.username).aexists():
         return Response({"detail": "Username taken"}, status_code=409)
@@ -321,6 +330,7 @@ async def register(data: RegisterInput):
 
 
 @auth_router.post("/login")
+@rate_limit(rps=RATE_AUTH, key="ip")
 async def login(data: LoginInput):
     user = await User.objects.filter(username=data.username).afirst()
     if not user or not user.check_password(data.password):
@@ -331,6 +341,7 @@ async def login(data: LoginInput):
 
 
 @auth_router.get("/me", auth=[JWTAuthentication()], guards=[IsAuthenticated()])
+@rate_limit(rps=RATE_READ, key="ip")
 async def me(request: Request) -> UserDetailSchema:
     u = request.user
     image_count = await Image.objects.filter(user=u).acount()
@@ -344,6 +355,7 @@ async def me(request: Request) -> UserDetailSchema:
 
 
 @auth_router.patch("/me", auth=[JWTAuthentication()], guards=[IsAuthenticated()])
+@rate_limit(rps=RATE_WRITE, key="ip")
 async def update_profile(request: Request, data: ProfileUpdateInput) -> UserDetailSchema:
     u = request.user
     if data.bio is not None:
@@ -359,6 +371,7 @@ async def update_profile(request: Request, data: ProfileUpdateInput) -> UserDeta
 # ---------------------------------------------------------------------------
 
 @cameras_router.get("")
+@rate_limit(rps=RATE_READ, key="ip")
 async def list_cameras() -> list[CameraSchema]:
     cameras = []
     async for c in Camera.objects.annotate(
@@ -369,6 +382,7 @@ async def list_cameras() -> list[CameraSchema]:
 
 
 @cameras_router.get("/{camera_id}")
+@rate_limit(rps=RATE_READ, key="ip")
 async def get_camera(camera_id: str) -> CameraSchema:
     c = await Camera.objects.annotate(
         image_count=Count('images')
@@ -377,6 +391,7 @@ async def get_camera(camera_id: str) -> CameraSchema:
 
 
 @cameras_router.get("/{camera_id}/images")
+@rate_limit(rps=RATE_READ, key="ip")
 async def camera_images(camera_id: str) -> list[ImageListSchema]:
     images = []
     qs = _public_images_qs().filter(
@@ -392,6 +407,7 @@ async def camera_images(camera_id: str) -> list[ImageListSchema]:
 # ---------------------------------------------------------------------------
 
 @lenses_router.get("")
+@rate_limit(rps=RATE_READ, key="ip")
 async def list_lenses() -> list[LensSchema]:
     lenses = []
     async for l in Lens.objects.annotate(
@@ -402,6 +418,7 @@ async def list_lenses() -> list[LensSchema]:
 
 
 @lenses_router.get("/{lens_id}")
+@rate_limit(rps=RATE_READ, key="ip")
 async def get_lens(lens_id: str) -> LensSchema:
     l = await Lens.objects.annotate(
         image_count=Count('images')
@@ -410,6 +427,7 @@ async def get_lens(lens_id: str) -> LensSchema:
 
 
 @lenses_router.get("/{lens_id}/images")
+@rate_limit(rps=RATE_READ, key="ip")
 async def lens_images(lens_id: str) -> list[ImageListSchema]:
     images = []
     qs = _public_images_qs().filter(
@@ -425,6 +443,7 @@ async def lens_images(lens_id: str) -> list[ImageListSchema]:
 # ---------------------------------------------------------------------------
 
 @images_router.get("/{image_id}")
+@rate_limit(rps=RATE_READ, key="ip")
 async def get_image(image_id: str):
     try:
         img = await (
@@ -444,6 +463,7 @@ async def get_image(image_id: str):
     auth=[JWTAuthentication()],
     guards=[IsAuthenticated()],
 )
+@rate_limit(rps=RATE_UPLOAD, key="ip")
 async def upload_image(
     request: Request,
     image: Annotated[UploadFile, File(max_size=50_000_000)],
@@ -521,6 +541,7 @@ async def upload_image(
     auth=[JWTAuthentication()],
     guards=[IsAuthenticated()],
 )
+@rate_limit(rps=RATE_WRITE, key="ip")
 async def update_image(request: Request, image_id: str, data: ImageUpdateInput):
     img = await Image.objects.select_related('user').aget(id=image_id)
     if str(img.user_id) != str(request.user.id):
@@ -547,6 +568,7 @@ async def update_image(request: Request, image_id: str, data: ImageUpdateInput):
     auth=[JWTAuthentication()],
     guards=[IsAuthenticated()],
 )
+@rate_limit(rps=RATE_WRITE, key="ip")
 async def delete_image(request: Request, image_id: str):
     img = await Image.objects.aget(id=image_id)
     if str(img.user_id) != str(request.user.id):
@@ -560,12 +582,14 @@ async def delete_image(request: Request, image_id: str):
 # ---------------------------------------------------------------------------
 
 @users_router.get("/{username}")
+@rate_limit(rps=RATE_READ, key="ip")
 async def get_user(username: str) -> UserSchema:
     u = await User.objects.aget(username=username)
     return _user_schema(u)
 
 
 @users_router.get("/{username}/images")
+@rate_limit(rps=RATE_READ, key="ip")
 async def user_images(username: str) -> list[ImageListSchema]:
     images = []
     qs = _public_images_qs().filter(
@@ -581,6 +605,7 @@ async def user_images(username: str) -> list[ImageListSchema]:
 # ---------------------------------------------------------------------------
 
 @collections_router.get("/user/{username}")
+@rate_limit(rps=RATE_READ, key="ip")
 async def user_collections(username: str) -> list[CollectionSchema]:
     collections = []
     qs = Collection.objects.filter(
@@ -597,6 +622,7 @@ async def user_collections(username: str) -> list[CollectionSchema]:
 
 
 @collections_router.get("/{collection_id}")
+@rate_limit(rps=RATE_READ, key="ip")
 async def get_collection(collection_id: str) -> CollectionDetailSchema:
     c = await Collection.objects.select_related('user').aget(id=collection_id)
     images = []
@@ -620,6 +646,7 @@ async def get_collection(collection_id: str) -> CollectionDetailSchema:
     auth=[JWTAuthentication()],
     guards=[IsAuthenticated()],
 )
+@rate_limit(rps=RATE_WRITE, key="ip")
 async def create_collection(request: Request, data: CollectionCreateInput):
     import uuid as _uuid
     base_slug = slugify(data.title) or 'collection'
@@ -649,6 +676,7 @@ async def create_collection(request: Request, data: CollectionCreateInput):
     auth=[JWTAuthentication()],
     guards=[IsAuthenticated()],
 )
+@rate_limit(rps=RATE_WRITE, key="ip")
 async def update_collection(
     request: Request, collection_id: str, data: CollectionUpdateInput,
 ):
@@ -681,6 +709,7 @@ async def update_collection(
     auth=[JWTAuthentication()],
     guards=[IsAuthenticated()],
 )
+@rate_limit(rps=RATE_WRITE, key="ip")
 async def delete_collection(request: Request, collection_id: str):
     c = await Collection.objects.aget(id=collection_id)
     if str(c.user_id) != str(request.user.id):
@@ -694,6 +723,7 @@ async def delete_collection(request: Request, collection_id: str):
     auth=[JWTAuthentication()],
     guards=[IsAuthenticated()],
 )
+@rate_limit(rps=RATE_WRITE, key="ip")
 async def add_image_to_collection(request: Request, collection_id: str, image_id: str):
     c = await Collection.objects.aget(id=collection_id)
     if str(c.user_id) != str(request.user.id):
@@ -714,6 +744,7 @@ async def add_image_to_collection(request: Request, collection_id: str, image_id
     auth=[JWTAuthentication()],
     guards=[IsAuthenticated()],
 )
+@rate_limit(rps=RATE_WRITE, key="ip")
 async def remove_image_from_collection(request: Request, collection_id: str, image_id: str):
     c = await Collection.objects.aget(id=collection_id)
     if str(c.user_id) != str(request.user.id):
@@ -732,6 +763,7 @@ async def remove_image_from_collection(request: Request, collection_id: str, ima
 # ---------------------------------------------------------------------------
 
 @groups_router.get("")
+@rate_limit(rps=RATE_READ, key="ip")
 async def list_groups() -> list[GroupSchema]:
     groups = []
     qs = (
@@ -749,6 +781,7 @@ async def list_groups() -> list[GroupSchema]:
 
 
 @groups_router.get("/{slug}")
+@rate_limit(rps=RATE_READ, key="ip")
 async def get_group(slug: str) -> GroupDetailSchema:
     g = await Group.objects.annotate(
         member_count=Count('memberships')
@@ -769,6 +802,7 @@ async def get_group(slug: str) -> GroupDetailSchema:
 
 
 @groups_router.get("/{slug}/images")
+@rate_limit(rps=RATE_READ, key="ip")
 async def group_images(slug: str) -> list[ImageListSchema]:
     images = []
     qs = _public_images_qs().filter(
@@ -784,6 +818,7 @@ async def group_images(slug: str) -> list[ImageListSchema]:
     auth=[JWTAuthentication()],
     guards=[IsAuthenticated()],
 )
+@rate_limit(rps=RATE_WRITE, key="ip")
 async def join_group(request: Request, slug: str):
     g = await Group.objects.aget(slug=slug)
     if g.visibility == Group.Visibility.PRIVATE:
@@ -803,6 +838,7 @@ async def join_group(request: Request, slug: str):
     auth=[JWTAuthentication()],
     guards=[IsAuthenticated()],
 )
+@rate_limit(rps=RATE_WRITE, key="ip")
 async def leave_group(request: Request, slug: str):
     deleted, _ = await GroupMembership.objects.filter(
         user=request.user, group__slug=slug,
@@ -817,6 +853,7 @@ async def leave_group(request: Request, slug: str):
     auth=[JWTAuthentication()],
     guards=[IsAuthenticated()],
 )
+@rate_limit(rps=RATE_WRITE, key="ip")
 async def submit_image_to_group(request: Request, slug: str, image_id: str):
     g = await Group.objects.aget(slug=slug)
 
@@ -841,6 +878,7 @@ async def submit_image_to_group(request: Request, slug: str, image_id: str):
 # ---------------------------------------------------------------------------
 
 @search_router.get("")
+@rate_limit(rps=RATE_SEARCH, key="ip")
 async def search_images(
     q: str = '',
     camera: str = '',
