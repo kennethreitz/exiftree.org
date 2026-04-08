@@ -93,7 +93,7 @@ def generate_thumbnails(image: Image, file) -> None:
             thumb.thumbnail(dimensions, PILImage.LANCZOS)
 
             buffer = BytesIO()
-            thumb.save(buffer, format='JPEG', quality=85, optimize=True)
+            thumb.save(buffer, format='JPEG', quality=92, optimize=True)
             buffer.seek(0)
 
             filename = f"{image.id}_{size_name}.jpg"

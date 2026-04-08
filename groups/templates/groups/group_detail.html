@@ -27,7 +27,7 @@
       <div class="image-grid">
         <template x-for="img in images" :key="img.id">
           <a :href="'/images/' + img.id + '/'" class="image-card">
-            <img :src="img.thumbnail_small" :alt="img.title" x-show="img.thumbnail_small">
+            <img :src="img.thumbnail_medium || img.thumbnail_small" :alt="img.title">
             <div class="overlay">
                     <div class="meta" x-text="'by @' + img.user"></div>
             </div>

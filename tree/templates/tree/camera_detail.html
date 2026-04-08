@@ -6,21 +6,32 @@
   <p>{{ camera.manufacturer }}</p>
 </div>
 
-<div class="image-grid" x-data="{
+<div x-data="{
   images: [],
+  selected: -1,
   async init() {
     const res = await fetch('/api/cameras/{{ camera.id }}/images');
     this.images = await res.json();
+  },
+  nav(dir) {
+    if (!this.images.length) return;
+    this.selected = Math.max(0, Math.min(this.images.length - 1, this.selected + dir));
+    this.$refs['card-' + this.selected]?.scrollIntoView({ block: 'nearest' });
+  },
+  open() {
+    if (this.selected >= 0) window.location.href = '/images/' + this.images[this.selected].id + '/';
   }
-}">
-  <template x-for="img in images" :key="img.id">
-    <a :href="'/images/' + img.id + '/'" class="image-card">
-      <img :src="img.thumbnail_small" :alt="img.title" x-show="img.thumbnail_small">
-      <div class="overlay">
-        <div class="meta" x-text="'by @' + img.user"></div>
-      </div>
-    </a>
-  </template>
+}" @keydown.right.window="nav(1)" @keydown.left.window="nav(-1)" @keydown.enter.window="open()">
+  <div class="image-grid">
+    <template x-for="(img, i) in images" :key="img.id">
+      <a :href="'/images/' + img.id + '/'" class="image-card" :class="selected === i ? 'image-card-selected' : ''" :ref="'card-' + i" @mouseenter="selected = i">
+        <img :src="img.thumbnail_medium || img.thumbnail_small" :alt="img.title">
+        <div class="overlay">
+          <div class="meta" x-text="'@' + img.user"></div>
+        </div>
+      </a>
+    </template>
+  </div>
   <div class="empty" x-show="images.length === 0">No images yet for this camera.</div>
 </div>
 {% endblock %}

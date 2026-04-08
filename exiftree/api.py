@@ -136,6 +136,7 @@ class ImageListSchema(msgspec.Struct):
     user: str
     upload_date: str
     thumbnail_small: str = ''
+    thumbnail_medium: str = ''
 
 
 class ImageUpdateInput(msgspec.Struct):
@@ -240,6 +241,7 @@ def _image_list_schema(img: Image) -> ImageListSchema:
         id=str(img.id), title=img.title, slug=img.slug,
         user=img.user.username, upload_date=img.upload_date.isoformat(),
         thumbnail_small=img.thumbnail_small.url if img.thumbnail_small else '',
+        thumbnail_medium=img.thumbnail_medium.url if img.thumbnail_medium else '',
     )
 
 
