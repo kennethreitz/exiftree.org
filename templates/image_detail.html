@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{% if image.title %}{{ image.title }} — {% endif %}ExifTree{% endblock %}
+{% block title %}{{ image.ai_title|default:image.title }} — {{ site_title }}{% endblock %}
 {% block head %}
 {% if image.exif and image.exif.gps_latitude and image.exif.gps_longitude %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -9,59 +9,14 @@
 {% block content %}
 <div>
   <div style="margin-bottom: 1.5rem;">
-    {% if image.thumbnail_large %}<img src="{{ image.thumbnail_large.url }}" alt="{{ image.title }}" style="max-width: 100%; border-radius: var(--radius);">
-    {% elif image.thumbnail_medium %}<img src="{{ image.thumbnail_medium.url }}" alt="{{ image.title }}" style="max-width: 100%; border-radius: var(--radius);">
-    {% elif image.thumbnail_small %}<img src="{{ image.thumbnail_small.url }}" alt="{{ image.title }}" style="max-width: 100%; border-radius: var(--radius);">{% endif %}
+    {% if image.thumbnail_large %}<img src="{{ image.thumbnail_large.url }}" alt="{{ image.ai_title|default:image.title }}" style="max-width: 100%; border-radius: var(--radius);">
+    {% elif image.thumbnail_medium %}<img src="{{ image.thumbnail_medium.url }}" alt="{{ image.ai_title|default:image.title }}" style="max-width: 100%; border-radius: var(--radius);">
+    {% elif image.thumbnail_small %}<img src="{{ image.thumbnail_small.url }}" alt="{{ image.ai_title|default:image.title }}" style="max-width: 100%; border-radius: var(--radius);">{% endif %}
   </div>
-
-  <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 1rem;">
-    <div>
-      {% if image.title %}<h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem;">{{ image.title }}</h1>{% endif %}
-      <p style="color: var(--text-muted);">
-        {{ image.upload_date|date:"N j, Y" }}
-        · {{ image.view_count }} views
-      </p>
-      {% if image.description %}<p style="margin-top: 0.5rem;">{{ image.description }}</p>{% endif %}
-      {% if image.ai_description %}<p style="margin-top: 0.5rem; color: var(--text-muted); font-style: italic;">{{ image.ai_description }}</p>{% endif %}
-      {% if image.tags.all %}
-      <div style="margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.3rem;">
-        {% for tag in image.tags.all %}
-        <a href="/tags/{{ tag.slug }}/" class="tag-pill" style="font-size: 0.8rem; padding: 0.2rem 0.6rem;">{{ tag.name }}</a>
-        {% endfor %}
-      </div>
-      {% endif %}
-    </div>
-
-    <!-- Download dropdown -->
-    <div style="display: flex; gap: 0.5rem;">
-      <details style="position: relative;">
-        <summary class="btn">Download</summary>
-        <div class="dropdown-menu" style="right: 0; min-width: 180px; margin-top: 0.25rem;">
-          {% if image.thumbnail_small %}<a href="{{ image.thumbnail_small.url }}" download><strong>S</strong> <span style="color: var(--text-muted);">Small (300px)</span></a>{% endif %}
-          {% if image.thumbnail_medium %}<a href="{{ image.thumbnail_medium.url }}" download><strong>M</strong> <span style="color: var(--text-muted);">Medium (800px)</span></a>{% endif %}
-          {% if image.thumbnail_large %}<a href="{{ image.thumbnail_large.url }}" download><strong>L</strong> <span style="color: var(--text-muted);">Large (1600px)</span></a>{% endif %}
-          <hr>
-          {% if image.original %}<a href="{{ image.original.url }}" download><strong>O</strong> <span style="color: var(--text-muted);">Original</span></a>{% endif %}
-        </div>
-      </details>
-    </div>
-  </div>
-
-  {% if image.exif and image.exif.gps_latitude and image.exif.gps_longitude %}
-  <div id="map" style="height: 250px; border-radius: var(--radius); margin: 1rem 0;"></div>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      var map = L.map('map').setView([{{ image.exif.gps_latitude }}, {{ image.exif.gps_longitude }}], 13);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OSM &copy; CARTO', maxZoom: 19,
-      }).addTo(map);
-      L.marker([{{ image.exif.gps_latitude }}, {{ image.exif.gps_longitude }}]).addTo(map);
-    });
-  </script>
-  {% endif %}
 
   {% if image.exif %}
-  <div class="exif-bar">
+  <div class="exif-bar" style="display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; flex-wrap: wrap; gap: 1.5rem;">
     {% if image.exif.camera %}
     <div class="exif-item">
       <span class="exif-label">Camera</span>
@@ -104,7 +59,50 @@
       <span>{{ image.exif.date_taken|date:"N j, Y" }}</span>
     </div>
     {% endif %}
+    </div>
+    <details style="position: relative;">
+      <summary class="btn">Download</summary>
+      <div class="dropdown-menu" style="right: 0; min-width: 180px; margin-top: 0.25rem;">
+        {% if image.thumbnail_small %}<a href="{{ image.thumbnail_small.url }}" download><strong>S</strong> <span style="color: var(--text-muted);">Small (300px)</span></a>{% endif %}
+        {% if image.thumbnail_medium %}<a href="{{ image.thumbnail_medium.url }}" download><strong>M</strong> <span style="color: var(--text-muted);">Medium (800px)</span></a>{% endif %}
+        {% if image.thumbnail_large %}<a href="{{ image.thumbnail_large.url }}" download><strong>L</strong> <span style="color: var(--text-muted);">Large (1600px)</span></a>{% endif %}
+        <hr>
+        {% if image.original %}<a href="{{ image.original.url }}" download><strong>O</strong> <span style="color: var(--text-muted);">Original</span></a>{% endif %}
+      </div>
+    </details>
   </div>
+  {% endif %}
+
+  <div style="margin-top: 1rem;">
+    <div>
+      <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem;">{{ image.ai_title|default:image.title }}</h1>
+      <p style="color: var(--text-muted);">
+        {{ image.upload_date|date:"N j, Y" }}
+        · {{ image.view_count }} views
+      </p>
+      {% if image.ai_description %}<p style="margin-top: 0.5rem;">{{ image.ai_description }}</p>{% endif %}
+      {% if image.description and image.description != image.ai_description %}<p style="margin-top: 0.5rem; color: var(--text-muted);">{{ image.description }}</p>{% endif %}
+      {% if image.tags.all %}
+      <div style="margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.3rem;">
+        {% for tag in image.tags.all %}
+        <a href="/tags/{{ tag.slug }}/" class="tag-pill" style="font-size: 0.8rem; padding: 0.2rem 0.6rem;">{{ tag.name }}</a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if image.exif and image.exif.gps_latitude and image.exif.gps_longitude %}
+  <div id="map" style="height: 250px; border-radius: var(--radius); margin: 1rem 0;"></div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var map = L.map('map').setView([{{ image.exif.gps_latitude }}, {{ image.exif.gps_longitude }}], 13);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OSM &copy; CARTO', maxZoom: 19,
+      }).addTo(map);
+      L.marker([{{ image.exif.gps_latitude }}, {{ image.exif.gps_longitude }}]).addTo(map);
+    });
+  </script>
   {% endif %}
 </div>
 {% endblock %}
