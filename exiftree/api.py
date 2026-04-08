@@ -546,30 +546,12 @@ async def upload_image(
 
     content_hash = hashlib.sha256(contents).hexdigest()
 
-    # Check for exact duplicate
+    # Check for exact byte-level duplicate (fast)
     existing = await Image.objects.filter(content_hash=content_hash).afirst()
     if existing:
         return Response({"detail": "Duplicate image", "id": str(existing.id)}, status_code=409)
 
-    # Check for perceptual duplicate
-    import imagehash
-    from PIL import Image as PILImage
-    from io import BytesIO
-    pil_img = PILImage.open(BytesIO(contents))
-    phash = str(imagehash.phash(pil_img))
-    pil_img.close()
-
-    # Exact phash match
-    existing = await Image.objects.filter(perceptual_hash=phash).afirst()
-    if existing:
-        return Response({"detail": "Visually similar image already exists", "id": str(existing.id)}, status_code=409)
-
-    # Fuzzy phash match (hamming distance <= 10)
-    upload_hash = imagehash.hex_to_hash(phash)
-    async for candidate in Image.objects.exclude(perceptual_hash='').exclude(perceptual_hash='8000000000000000'):
-        if imagehash.hex_to_hash(candidate.perceptual_hash) - upload_hash <= 10:
-            return Response({"detail": "Visually similar image already exists", "id": str(candidate.id)}, status_code=409)
-
+    # Perceptual dedup happens async in the Celery worker — keeps upload fast
     slug = slugify(title) if title else slugify(image.filename.rsplit('.', 1)[0])
 
     @sync_to_async
