@@ -12,3 +12,4 @@ media/
 staticfiles/
 .env
 .DS_Store
+dump.json
