@@ -3,7 +3,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
-from core.views import dashboard, home, image_detail, login_view, register_view, users_list
+from core.views import dashboard, flickr_import, home, image_detail, login_view, register_view, users_list
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -11,6 +11,7 @@ urlpatterns = [
     path("login/", login_view, name="login"),
     path("register/", register_view, name="register"),
     path("dashboard/", dashboard, name="dashboard"),
+    path("import/flickr/", flickr_import, name="flickr-import"),
     path("users/", users_list, name="users"),
     path("images/<uuid:image_id>/", image_detail, name="image-detail"),
     path("", include("tree.urls")),

@@ -1010,6 +1010,51 @@ async def search_images(
 
 
 # ---------------------------------------------------------------------------
+# Import
+# ---------------------------------------------------------------------------
+
+import_router = Router(prefix="/api/import", tags=["import"])
+
+
+@import_router.post(
+    "/flickr",
+    auth=[JWTAuthentication()],
+    guards=[IsAuthenticated()],
+)
+@rate_limit(rps=1, key="ip")
+async def start_flickr_import(
+    request: Request,
+    flickr_user: str,
+    api_key: str,
+    set_id: str = '',
+    max: int = 0,
+):
+    from asgiref.sync import sync_to_async
+    from ingest.tasks import flickr_import_task
+
+    try:
+        await sync_to_async(flickr_import_task.apply_async)(
+            args=[flickr_user, api_key, request.user.username],
+            kwargs={'set_id': set_id, 'max_photos': max},
+            ignore_result=True,
+        )
+    except Exception:
+        # No Celery — run synchronously
+        from django.core.management import call_command
+        from io import StringIO
+        out = StringIO()
+        args = [flickr_user, '--api-key', api_key, '--user', request.user.username]
+        if set_id:
+            args += ['--set', set_id]
+        if max:
+            args += ['--max', str(max)]
+        await sync_to_async(call_command)('import_flickr', *args, stdout=out)
+        return Response({"message": "Import complete", "detail": out.getvalue()}, status_code=200)
+
+    return Response({"message": "Import started in background"}, status_code=202)
+
+
+# ---------------------------------------------------------------------------
 # Wire up routers
 # ---------------------------------------------------------------------------
 
@@ -1021,6 +1066,7 @@ api.include_router(users_router)
 api.include_router(collections_router)
 api.include_router(groups_router)
 api.include_router(search_router)
+api.include_router(import_router)
 
 # Mount Django views (admin, templates) as fallback for non-API routes
 api.mount_django("/", clear_root_path=True)

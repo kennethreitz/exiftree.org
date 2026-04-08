@@ -43,3 +43,21 @@ def process_image_task(self, image_id: str) -> None:
     except Exception as exc:
         logger.exception("Failed to process image %s", image_id)
         raise self.retry(exc=exc)
+
+
+@shared_task(bind=True)
+def flickr_import_task(self, flickr_user: str, api_key: str, username: str,
+                       set_id: str = '', max_photos: int = 0) -> str:
+    """Background Flickr import task."""
+    from django.core.management import call_command
+    from io import StringIO
+
+    out = StringIO()
+    args = [flickr_user, '--api-key', api_key, '--user', username, '--workers', '4']
+    if set_id:
+        args += ['--set', set_id]
+    if max_photos:
+        args += ['--max', str(max_photos)]
+
+    call_command('import_flickr', *args, stdout=out, stderr=out)
+    return out.getvalue()

@@ -62,6 +62,10 @@ def users_list(request):
     return render(request, 'users.html', {'users': users, 'query': q})
 
 
+def flickr_import(request):
+    return render(request, 'flickr_import.html')
+
+
 def register_view(request):
     return render(request, 'registration/register.html')
 
