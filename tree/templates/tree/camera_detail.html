@@ -24,18 +24,22 @@
 }" @keydown.right.window="nav(1)" @keydown.left.window="nav(-1)" @keydown.enter.window="open()">
   <div class="image-grid">
     <template x-for="(img, i) in images" :key="img.id">
-      <a :href="'/images/' + img.id + '/'" class="image-card" :class="selected === i ? 'image-card-selected' : ''" :ref="'card-' + i" @mouseenter="selected = i">
-        <img :src="img.thumbnail_medium || img.thumbnail_small" :alt="img.title">
-        <div class="overlay">
-          <div class="meta" x-text="'@' + img.user"></div>
-          <div class="exif-meta" x-show="img.camera || img.focal_length">
-            <span x-text="img.camera" x-show="img.camera"></span>
-            <span x-show="img.focal_length" x-text="img.focal_length + 'mm'"></span>
-            <span x-show="img.aperture" x-text="'f/' + img.aperture"></span>
-            <span x-show="img.iso" x-text="'ISO ' + img.iso"></span>
+      <div>
+        <a :href="'/images/' + img.id + '/'" class="image-card" :class="selected === i ? 'image-card-selected' : ''" :ref="'card-' + i" @mouseenter="selected = i">
+          <img :src="img.thumbnail_medium || img.thumbnail_small" :alt="img.title">
+          <div class="overlay">
+            <div class="exif-row">
+              <div class="exif-left"><span x-text="img.camera" x-show="img.camera"></span></div>
+              <div class="exif-right">
+                <span x-show="img.focal_length" x-text="img.focal_length + 'mm'"></span>
+                <span x-show="img.aperture" x-text="'f/' + img.aperture"></span>
+                <span x-show="img.iso" x-text="'ISO ' + img.iso"></span>
+              </div>
+            </div>
           </div>
-        </div>
-      </a>
+        </a>
+        <a :href="'/@' + img.user" class="image-card-user" x-text="'@' + img.user"></a>
+      </div>
     </template>
   </div>
   <div class="empty" x-show="images.length === 0">No images yet for this camera.</div>
