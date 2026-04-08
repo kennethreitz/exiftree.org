@@ -59,17 +59,19 @@ document.getElementById('import-form').addEventListener('submit', async function
   logDiv.style.display = 'block';
   logOutput.textContent = '';
 
-  var params = new URLSearchParams({
-    flickr_user: document.getElementById('flickr-user').value,
-    api_key: document.getElementById('flickr-key').value,
-    set_id: document.getElementById('flickr-set').value,
-    max: document.getElementById('flickr-max').value,
-  });
-
   try {
-    var res = await fetch('/api/import/flickr?' + params, {
+    var res = await fetch('/api/import/flickr', {
       method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + token },
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        flickr_user: document.getElementById('flickr-user').value,
+        api_key: document.getElementById('flickr-key').value,
+        set_id: document.getElementById('flickr-set').value || '',
+        max: parseInt(document.getElementById('flickr-max').value) || 0,
+      }),
     });
     var data = await res.json();
     if (res.ok) {

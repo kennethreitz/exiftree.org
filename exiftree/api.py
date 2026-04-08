@@ -1016,26 +1016,27 @@ async def search_images(
 import_router = Router(prefix="/api/import", tags=["import"])
 
 
+class FlickrImportInput(msgspec.Struct):
+    flickr_user: str
+    api_key: str
+    set_id: str = ''
+    max: int = 0
+
+
 @import_router.post(
     "/flickr",
     auth=[JWTAuthentication()],
     guards=[IsAuthenticated()],
 )
 @rate_limit(rps=1, key="ip")
-async def start_flickr_import(
-    request: Request,
-    flickr_user: str,
-    api_key: str,
-    set_id: str = '',
-    max: int = 0,
-):
+async def start_flickr_import(request: Request, data: FlickrImportInput):
     from asgiref.sync import sync_to_async
     from ingest.tasks import flickr_import_task
 
     try:
         await sync_to_async(flickr_import_task.apply_async)(
-            args=[flickr_user, api_key, request.user.username],
-            kwargs={'set_id': set_id, 'max_photos': max},
+            args=[data.flickr_user, data.api_key, request.user.username],
+            kwargs={'set_id': data.set_id, 'max_photos': data.max},
             ignore_result=True,
         )
     except Exception:
@@ -1043,11 +1044,11 @@ async def start_flickr_import(
         from django.core.management import call_command
         from io import StringIO
         out = StringIO()
-        args = [flickr_user, '--api-key', api_key, '--user', request.user.username]
-        if set_id:
-            args += ['--set', set_id]
-        if max:
-            args += ['--max', str(max)]
+        args = [data.flickr_user, '--api-key', data.api_key, '--user', request.user.username]
+        if data.set_id:
+            args += ['--set', data.set_id]
+        if data.max:
+            args += ['--max', str(data.max)]
         await sync_to_async(call_command)('import_flickr', *args, stdout=out)
         return Response({"message": "Import complete", "detail": out.getvalue()}, status_code=200)
 
