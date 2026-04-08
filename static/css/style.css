@@ -346,7 +346,45 @@ a:hover { color: var(--accent-hover); }
 }
 .member-list .role { color: var(--text-muted); font-size: 0.8rem; }
 
-/* Collection */
+/* Collection grid */
+.collection-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+@media (max-width: 768px) { .collection-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .collection-grid { grid-template-columns: 1fr; } }
+
+.collection-card {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  color: inherit;
+  transition: border-color 0.15s;
+}
+.collection-card:hover { border-color: var(--text-muted); color: inherit; }
+
+.collection-card-image {
+  aspect-ratio: 1;
+  background: var(--bg);
+  overflow: hidden;
+}
+.collection-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.collection-card-info {
+  padding: 0.75rem 1rem;
+}
+.collection-card-info h3 { font-size: 1rem; margin-bottom: 0.15rem; }
+.collection-card-info .count { color: var(--text-muted); font-size: 0.85rem; }
+
+/* Collection detail */
 .collection-header { margin-bottom: 2rem; }
 .collection-header h1 { margin-bottom: 0.25rem; }
 .collection-header .desc { color: var(--text-muted); }
@@ -409,8 +447,8 @@ a:hover { color: var(--accent-hover); }
 }
 
 .manage-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  display: grid !important;
+  grid-template-columns: repeat(5, 1fr) !important;
   gap: 4px;
 }
 @media (max-width: 768px) { .manage-grid { grid-template-columns: repeat(3, 1fr); } }
@@ -423,6 +461,7 @@ a:hover { color: var(--accent-hover); }
   cursor: pointer;
   background: var(--surface);
   transition: transform 0.1s;
+  min-width: 0;
 }
 .manage-item img {
   width: 100%;
@@ -435,9 +474,8 @@ a:hover { color: var(--accent-hover); }
 .manage-item-selected {
   outline: 3px solid var(--accent);
   outline-offset: -3px;
-  transform: scale(0.95);
 }
-.manage-item-selected:hover { transform: scale(0.95); }
+.manage-item-selected:hover { transform: none; }
 
 .manage-check {
   position: absolute;

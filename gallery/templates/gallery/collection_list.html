@@ -1,15 +1,24 @@
 {% extends "base.html" %}
-{% block title %}Collections — ExifTree{% endblock %}
+{% block title %}Collections — {{ site_title }}{% endblock %}
 {% block content %}
 <div class="page-header">
   <h1>Collections</h1>
 </div>
 
-<div class="gear-grid">
+<div class="collection-grid">
   {% for c in collections %}
-  <a href="/collections/{{ c.slug }}/" class="gear-card" style="color: inherit;">
-    <h3>{{ c.title }}</h3>
-    <span class="count">{{ c.image_count }} images</span>
+  <a href="/collections/{{ c.slug }}/" class="collection-card">
+    <div class="collection-card-image">
+      {% if c.preview and c.preview.thumbnail_small %}
+      <img src="{{ c.preview.thumbnail_small.url }}" alt="{{ c.title }}">
+      {% elif c.preview and c.preview.thumbnail_medium %}
+      <img src="{{ c.preview.thumbnail_medium.url }}" alt="{{ c.title }}">
+      {% endif %}
+    </div>
+    <div class="collection-card-info">
+      <h3>{{ c.title }}</h3>
+      <span class="count">{{ c.image_count }} images</span>
+    </div>
   </a>
   {% empty %}
   <div class="empty" style="grid-column: 1 / -1;">No collections yet.</div>

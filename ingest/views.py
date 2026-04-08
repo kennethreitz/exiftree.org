@@ -52,7 +52,9 @@ def upload_image(request):
     try:
         process_image_task.apply_async(args=[str(img.id)], ignore_result=True)
     except Exception:
+        # No Celery — process in a background thread
+        import threading
         from ingest.pipeline import process_image
-        process_image(img)
+        threading.Thread(target=process_image, args=(img,), daemon=True).start()
 
     return JsonResponse({'id': str(img.id), 'title': img.title}, status=201)

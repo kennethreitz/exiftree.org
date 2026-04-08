@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Count
 from django.db.models.functions import ExtractYear
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.text import slugify
 from django.views.decorators.http import require_POST
 
 from core.models import ExifData, Image
@@ -74,7 +75,6 @@ def dashboard(request):
 def dashboard_create_collection(request):
     title = request.POST.get('title', '').strip()
     if title:
-        from django.utils.text import slugify
         import uuid
         base_slug = slugify(title) or 'collection'
         slug = base_slug
@@ -105,26 +105,67 @@ def dashboard_delete_image(request, image_id):
 
 @login_required
 def manage(request):
-    images = (
+    from core.models import Camera, Lens
+
+    qs = (
         Image.objects.filter(user=request.user, is_processing=False)
         .select_related('exif', 'exif__camera', 'exif__lens')
         .order_by('-upload_date')
     )
+
+    # Filters
+    camera = request.GET.get('camera', '')
+    lens = request.GET.get('lens', '')
+    year = request.GET.get('year', '')
+    visibility = request.GET.get('visibility', '')
+
+    if camera:
+        qs = qs.filter(exif__camera_id=camera)
+    if lens:
+        qs = qs.filter(exif__lens_id=lens)
+    if year:
+        qs = qs.filter(exif__date_taken__year=int(year))
+    if visibility:
+        qs = qs.filter(visibility=visibility)
+
+    # Facets: only cameras/lenses/years the user actually has
+    user_images = Image.objects.filter(user=request.user, is_processing=False)
+    cameras = (
+        Camera.objects.filter(images__image__in=user_images)
+        .distinct().order_by('manufacturer', 'model')
+    )
+    lenses = (
+        Lens.objects.filter(images__image__in=user_images)
+        .distinct().order_by('manufacturer', 'model')
+    )
+    years = (
+        ExifData.objects.filter(image__in=user_images, date_taken__isnull=False)
+        .dates('date_taken', 'year', order='DESC')
+    )
+
     collections = (
         Collection.objects.filter(user=request.user)
         .annotate(image_count=Count('collection_images'))
         .order_by('-created_at')
     )
+
     return render(request, 'manage.html', {
-        'images': images,
+        'images': qs,
         'collections': collections,
+        'cameras': cameras,
+        'lenses': lenses,
+        'years': years,
+        'filter_camera': camera,
+        'filter_lens': lens,
+        'filter_year': year,
+        'filter_visibility': visibility,
     })
 
 
 @login_required
 @require_POST
 def manage_set_visibility(request):
-    image_ids = request.POST.getlist('image_ids')
+    image_ids = [x for x in request.POST.getlist('image_ids') if x.strip()]
     visibility = request.POST.get('visibility', 'public')
     if visibility in ('public', 'private', 'unlisted') and image_ids:
         Image.objects.filter(id__in=image_ids, user=request.user).update(visibility=visibility)
@@ -134,7 +175,7 @@ def manage_set_visibility(request):
 @login_required
 @require_POST
 def manage_delete_images(request):
-    image_ids = request.POST.getlist('image_ids')
+    image_ids = [x for x in request.POST.getlist('image_ids') if x.strip()]
     if image_ids:
         Image.objects.filter(id__in=image_ids, user=request.user).delete()
     return redirect('manage')
@@ -143,9 +184,24 @@ def manage_delete_images(request):
 @login_required
 @require_POST
 def manage_add_to_collection(request):
+    import uuid as _uuid
     from gallery.models import CollectionImage
-    image_ids = request.POST.getlist('image_ids')
-    collection_id = request.POST.get('collection_id')
+
+    image_ids = [x for x in request.POST.getlist('image_ids') if x.strip()]
+    collection_id = request.POST.get('collection_id', '').strip()
+    new_collection_name = request.POST.get('new_collection', '').strip()
+
+    # Create new collection if requested
+    if new_collection_name and not collection_id:
+        base_slug = slugify(new_collection_name) or 'collection'
+        slug = base_slug
+        while Collection.objects.filter(user=request.user, slug=slug).exists():
+            slug = f"{base_slug}-{str(_uuid.uuid4())[:8]}"
+        col = Collection.objects.create(
+            user=request.user, title=new_collection_name, slug=slug,
+        )
+        collection_id = str(col.id)
+
     if image_ids and collection_id:
         collection = Collection.objects.filter(id=collection_id, user=request.user).first()
         if collection:
@@ -156,7 +212,6 @@ def manage_add_to_collection(request):
             count = CollectionImage.objects.filter(collection=collection).count()
             new_entries = []
             for img_id in image_ids:
-                import uuid as _uuid
                 parsed = _uuid.UUID(img_id)
                 if parsed not in existing:
                     new_entries.append(CollectionImage(

@@ -147,7 +147,7 @@ if os.environ.get("AWS_STORAGE_BUCKET_NAME") or os.environ.get("BUCKET_NAME"):
             "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
         },
         "staticfiles": {
-            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+            "BACKEND": "django.contrib.staticfiles.storage.ManifestStaticFilesStorage",
         },
     }
     AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME") or os.environ.get("BUCKET_NAME", "")
@@ -161,11 +161,19 @@ if os.environ.get("AWS_STORAGE_BUCKET_NAME") or os.environ.get("BUCKET_NAME"):
     AWS_DEFAULT_ACL = "public-read"
     AWS_QUERYSTRING_AUTH = False
 
-# Celery
-CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+# Celery — use Postgres as broker in production, Redis locally
+_db_url = os.environ.get("DATABASE_URL", "")
+if _db_url and not os.environ.get("CELERY_BROKER_URL"):
+    # Convert postgres:// to sqla+postgresql:// for Celery's SQLAlchemy transport
+    _sqla_url = _db_url.replace("postgres://", "postgresql://", 1)
+    CELERY_BROKER_URL = f"sqla+{_sqla_url}"
+    CELERY_RESULT_BACKEND = "db+" + _sqla_url
+else:
+    CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
+    CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 LOGIN_REDIRECT_URL = '/'
 LOGIN_URL = '/login/'

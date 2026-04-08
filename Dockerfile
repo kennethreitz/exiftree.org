@@ -27,4 +27,5 @@ RUN uv run python manage.py collectstatic --noinput
 
 EXPOSE 8000
 
+# Default command — overridden by fly.toml [processes]
 CMD ["uv", "run", "python", "manage.py", "runbolt", "--host", "0.0.0.0", "--port", "8000"]
