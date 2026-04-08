@@ -621,10 +621,17 @@ async def get_collection(collection_id: str) -> CollectionDetailSchema:
     guards=[IsAuthenticated()],
 )
 async def create_collection(request: Request, data: CollectionCreateInput):
+    import uuid as _uuid
+    base_slug = slugify(data.title) or 'collection'
+    slug = base_slug
+    # Ensure unique slug per user
+    while await Collection.objects.filter(user=request.user, slug=slug).aexists():
+        slug = f"{base_slug}-{str(_uuid.uuid4())[:8]}"
+
     c = await Collection.objects.acreate(
         user=request.user,
         title=data.title,
-        slug=slugify(data.title),
+        slug=slug,
         description=data.description,
         visibility=data.visibility,
     )
@@ -633,7 +640,7 @@ async def create_collection(request: Request, data: CollectionCreateInput):
             id=str(c.id), title=c.title, slug=c.slug,
             description=c.description, visibility=c.visibility, image_count=0,
         ),
-        status=201,
+        status_code=201,
     )
 
 

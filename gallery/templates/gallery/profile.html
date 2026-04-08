@@ -27,7 +27,7 @@
 
       <!-- Sets -->
       <div x-show="collections.length > 0" style="margin-bottom: 2rem;">
-        <h2 style="font-size: 1.25rem; margin-bottom: 1rem;">Sets</h2>
+        <h2 style="font-size: 1.25rem; margin-bottom: 1rem;">Collections</h2>
         <div class="gear-grid">
           <template x-for="c in collections" :key="c.id">
             <a :href="'/@{{ profile_user.username }}/collections/' + c.slug + '/'" class="gear-card" style="color: inherit;">
