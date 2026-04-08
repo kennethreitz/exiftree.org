@@ -12,6 +12,7 @@ from typing import Annotated
 import msgspec
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
+from django.db import models
 from django.db.models import Count
 from django.utils.text import slugify
 from django_bolt import (
@@ -425,6 +426,9 @@ async def get_image(image_id: str) -> ImageSchema:
         Image.objects.select_related('user', 'exif', 'exif__camera', 'exif__lens')
         .aget(id=image_id, visibility=Image.Visibility.PUBLIC, is_processing=False)
     )
+    # Increment view count
+    await Image.objects.filter(id=image_id).aupdate(view_count=models.F('view_count') + 1)
+    img.view_count += 1
     return _image_schema(img)
 
 

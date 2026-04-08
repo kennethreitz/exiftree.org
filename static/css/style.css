@@ -253,6 +253,8 @@ a:hover { color: var(--accent-hover); }
 .auth-form .alt { text-align: center; margin-top: 1rem; font-size: 0.9rem; color: var(--text-muted); }
 
 /* Upload */
+.upload-page { min-height: 60vh; }
+.upload-page-dragover { background: rgba(74, 158, 255, 0.05); }
 .upload-zone {
   border: 2px dashed var(--border);
   border-radius: var(--radius);
@@ -262,8 +264,19 @@ a:hover { color: var(--accent-hover); }
   transition: border-color 0.15s;
   margin-bottom: 1rem;
 }
-.upload-zone:hover, .upload-zone.dragover { border-color: var(--accent); }
+.upload-page-dragover .upload-zone { border-color: var(--accent); background: rgba(74, 158, 255, 0.08); }
+.upload-zone:hover { border-color: var(--accent); }
 .upload-zone p { color: var(--text-muted); }
+
+.upload-queue { display: flex; flex-direction: column; gap: 0.5rem; }
+.upload-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.75rem 1rem; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); font-size: 0.9rem;
+}
+.upload-item-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%; }
+.upload-done { border-color: #4c4; }
+.upload-error { border-color: #f44; }
 
 /* Members list */
 .member-list { list-style: none; }

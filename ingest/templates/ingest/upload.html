@@ -1,76 +1,94 @@
 {% extends "base.html" %}
 {% block title %}Upload — ExifTree{% endblock %}
 {% block content %}
-<div class="page-header">
-  <h1>Upload</h1>
-</div>
-
 <div x-data="{
-  file: null, title: '', description: '', uploading: false, error: '', done: false, imageId: '',
+  files: [],
   dragover: false,
-  handleDrop(e) {
-    this.dragover = false;
-    if (e.dataTransfer.files.length) this.file = e.dataTransfer.files[0];
-  },
-  async upload() {
-    if (!this.file) { this.error = 'Select an image first'; return; }
-    this.uploading = true;
-    this.error = '';
-    const token = localStorage.getItem('token');
-    if (!token) { this.error = 'Please log in first'; this.uploading = false; return; }
-
-    const form = new FormData();
-    form.append('image', this.file);
-    form.append('title', this.title);
-    form.append('description', this.description);
-
-    try {
-      const res = await fetch('/api/images/upload', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token },
-        body: form,
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        this.error = data.detail || 'Upload failed';
-      } else {
-        const data = await res.json();
-        this.imageId = data.id;
-        this.done = true;
-      }
-    } catch(e) {
-      this.error = 'Upload failed';
+  error: '',
+  addFiles(fileList) {
+    for (const f of fileList) {
+      if (!f.type.startsWith('image/')) continue;
+      this.files.push({ file: f, name: f.name, status: 'pending', id: null, error: '' });
     }
-    this.uploading = false;
+    this.uploadAll();
+  },
+  async uploadAll() {
+    const token = localStorage.getItem('token');
+    if (!token) { this.error = 'Please log in first'; return; }
+    for (const item of this.files) {
+      if (item.status !== 'pending') continue;
+      item.status = 'uploading';
+      const form = new FormData();
+      form.append('image', item.file);
+      try {
+        const res = await fetch('/api/images/upload', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token },
+          body: form,
+        });
+        if (res.ok) {
+          const data = await res.json();
+          item.id = data.id;
+          item.status = 'done';
+        } else {
+          const data = await res.json().catch(() => ({}));
+          item.error = data.detail || 'Upload failed';
+          item.status = 'error';
+        }
+      } catch(e) {
+        item.error = 'Upload failed';
+        item.status = 'error';
+      }
+    }
   }
-}">
-  <div x-show="!done">
-    <div class="upload-zone"
-         :class="{ dragover }"
-         @click="$refs.fileInput.click()"
-         @dragover.prevent="dragover = true"
-         @dragleave="dragover = false"
-         @drop.prevent="handleDrop($event)">
-      <p x-show="!file">Drop an image here, or click to browse</p>
-      <p x-show="file" x-text="file?.name"></p>
-    </div>
-    <input type="file" accept="image/*" x-ref="fileInput" style="display:none"
-           @change="file = $event.target.files[0]">
+}"
+  @dragover.prevent="dragover = true"
+  @dragleave.prevent="dragover = false"
+  @drop.prevent="dragover = false; addFiles($event.dataTransfer.files)"
+  :class="{ 'upload-page-dragover': dragover }"
+  class="upload-page"
+>
 
-    <div style="display: flex; flex-direction: column; gap: 0.75rem; max-width: 500px;">
-      <input type="text" x-model="title" placeholder="Title (optional)"
-             style="padding: 0.5rem 0.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text);">
-      <textarea x-model="description" placeholder="Description (optional)" rows="3"
-                style="padding: 0.5rem 0.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); resize: vertical;"></textarea>
-      <button class="btn btn-primary" @click="upload()" :disabled="uploading"
-              x-text="uploading ? 'Uploading...' : 'Upload'"></button>
-      <p x-show="error" x-text="error" style="color: #f44;"></p>
-    </div>
+  <div class="page-header">
+    <h1>Upload</h1>
+    <p>Drag images anywhere on this page, or click below to browse.</p>
   </div>
 
-  <div x-show="done" class="empty">
-    <p>Upload complete! Your image is being processed.</p>
-    <a :href="'/images/' + imageId + '/'" class="btn btn-primary" style="margin-top: 1rem;">View image</a>
+  <p x-show="error" x-text="error" style="color: #f44; margin-bottom: 1rem;"></p>
+
+  <div class="upload-zone" @click="$refs.fileInput.click()">
+    <p>Drop images here or click to browse</p>
+    <p style="font-size: 0.8rem; color: var(--text-muted);">JPEG, PNG, WebP — up to 50MB each</p>
+  </div>
+  <input type="file" accept="image/*" multiple x-ref="fileInput" style="display:none"
+         @change="addFiles($event.target.files)">
+
+  <!-- Upload queue -->
+  <div x-show="files.length > 0" style="margin-top: 2rem;">
+    <h2 style="font-size: 1.1rem; margin-bottom: 1rem;"
+        x-text="files.filter(f => f.status === 'done').length + ' of ' + files.length + ' uploaded'"></h2>
+
+    <div class="upload-queue">
+      <template x-for="(item, i) in files" :key="i">
+        <div class="upload-item" :class="'upload-' + item.status">
+          <span class="upload-item-name" x-text="item.name"></span>
+          <span class="upload-item-status">
+            <template x-if="item.status === 'pending'">
+              <span style="color: var(--text-muted);">Waiting...</span>
+            </template>
+            <template x-if="item.status === 'uploading'">
+              <span style="color: var(--accent);">Uploading...</span>
+            </template>
+            <template x-if="item.status === 'done'">
+              <a :href="'/images/' + item.id + '/'" style="color: #4c4;">Done — view</a>
+            </template>
+            <template x-if="item.status === 'error'">
+              <span style="color: #f44;" x-text="item.error"></span>
+            </template>
+          </span>
+        </div>
+      </template>
+    </div>
   </div>
 </div>
 {% endblock %}
