@@ -122,7 +122,7 @@ def _get_gps_coord(tags: dict, coord_key: str, ref_key: str) -> Decimal | None:
         minutes = _ratio_to_float(values[1])
         seconds = _ratio_to_float(values[2])
         decimal = degrees + (minutes / 60) + (seconds / 3600)
-        if ref and str(ref) in ('S', 'W'):
+        if ref and str(ref).strip().upper() in ('S', 'W'):
             decimal = -decimal
         return Decimal(str(round(decimal, 6)))
     except (IndexError, ValueError, ZeroDivisionError, AttributeError):
