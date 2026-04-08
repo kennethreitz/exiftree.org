@@ -199,13 +199,22 @@ class Command(BaseCommand):
             if not url:
                 url = sizes[-1]['source']
 
-            # Download
-            try:
-                resp = self.session.get(url, timeout=60)
-                resp.raise_for_status()
-                return resp.content, i, photo_id, title, description, date_taken
-            except Exception as e:
-                return None, i, photo_id, title, str(e)
+            # Download with backoff on 429
+            import time as _time
+            for attempt in range(5):
+                try:
+                    resp = self.session.get(url, timeout=60)
+                    if resp.status_code == 429:
+                        wait = 2 ** attempt
+                        _time.sleep(wait)
+                        continue
+                    resp.raise_for_status()
+                    return resp.content, i, photo_id, title, description, date_taken
+                except Exception as e:
+                    if '429' in str(e) and attempt < 4:
+                        _time.sleep(2 ** attempt)
+                        continue
+                    return None, i, photo_id, title, str(e)
 
         with ThreadPoolExecutor(max_workers=self.workers) as pool:
             futures = {pool.submit(fetch_one, item): item for item in pending}
@@ -307,6 +316,7 @@ class Command(BaseCommand):
         }))
 
     def _flickr(self, method, **kwargs):
+        import time as _time
         params = {
             'method': method,
             'api_key': self.api_key,
@@ -314,7 +324,14 @@ class Command(BaseCommand):
             'nojsoncallback': '1',
             **kwargs,
         }
-        resp = self.session.get(FLICKR_API, params=params, timeout=15)
+        for attempt in range(5):
+            resp = self.session.get(FLICKR_API, params=params, timeout=15)
+            if resp.status_code == 429:
+                wait = 2 ** attempt
+                _time.sleep(wait)
+                continue
+            resp.raise_for_status()
+            return resp.json()
         resp.raise_for_status()
         return resp.json()
 
