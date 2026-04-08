@@ -5,6 +5,21 @@
   files: [],
   dragover: false,
   error: '',
+  collections: [],
+  selectedCollection: '',
+  newCollectionName: '',
+  creatingCollection: false,
+  async init() {
+    const token = localStorage.getItem('token');
+    if (token) {
+      const me = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+      if (me.ok) {
+        const user = await me.json();
+        const res = await fetch('/api/collections/user/' + user.username);
+        if (res.ok) this.collections = await res.json();
+      }
+    }
+  },
   addFiles(fileList) {
     for (const f of fileList) {
       if (!f.type.startsWith('image/')) continue;
@@ -17,6 +32,23 @@
   async uploadAll() {
     const token = localStorage.getItem('token');
     if (!token) { this.error = 'Please log in first'; return; }
+
+    // Create new collection if requested
+    if (this.newCollectionName.trim()) {
+      const res = await fetch('/api/collections', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: this.newCollectionName }),
+      });
+      if (res.ok) {
+        const c = await res.json();
+        this.collections.unshift(c);
+        this.selectedCollection = c.id;
+        this.newCollectionName = '';
+        this.creatingCollection = false;
+      }
+    }
+
     this.drain(token);
   },
   drain(token) {
@@ -49,6 +81,13 @@
           } catch(e) {}
           item.status = 'done';
           item.progress = 100;
+          // Add to collection if selected
+          if (this.selectedCollection && item.id) {
+            fetch('/api/collections/' + this.selectedCollection + '/images/' + item.id, {
+              method: 'POST',
+              headers: { 'Authorization': 'Bearer ' + token },
+            });
+          }
         } else if (xhr.status === 409) {
           try {
             const data = JSON.parse(xhr.responseText);
@@ -89,6 +128,30 @@
   <div class="page-header">
     <h1>Upload</h1>
     <p>Drag images anywhere on this page, or click below to browse.</p>
+  </div>
+
+  <!-- Collection picker -->
+  <div style="margin-bottom: 1.5rem; display: flex; gap: 0.75rem; align-items: end; flex-wrap: wrap;">
+    <div class="field">
+      <label style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.25rem;">Add to collection</label>
+      <select x-model="selectedCollection"
+        style="padding: 0.5rem 0.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 0.9rem;">
+        <option value="">None</option>
+        <template x-for="c in collections" :key="c.id">
+          <option :value="c.id" x-text="c.title"></option>
+        </template>
+      </select>
+    </div>
+    <template x-if="!creatingCollection">
+      <button class="btn" @click="creatingCollection = true" style="font-size: 0.85rem;">+ New collection</button>
+    </template>
+    <template x-if="creatingCollection">
+      <div style="display: flex; gap: 0.5rem; align-items: end;">
+        <input type="text" x-model="newCollectionName" placeholder="Collection name"
+          style="padding: 0.5rem 0.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text);">
+        <button class="btn" @click="creatingCollection = false; newCollectionName = ''">Cancel</button>
+      </div>
+    </template>
   </div>
 
   <p x-show="error" x-text="error" style="color: #f44; margin-bottom: 1rem;"></p>
