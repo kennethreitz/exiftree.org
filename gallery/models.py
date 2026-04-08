@@ -23,6 +23,10 @@ class Collection(models.Model):
     images = models.ManyToManyField(
         Image, through='CollectionImage', related_name='collections'
     )
+    date = models.DateField(
+        null=True, blank=True,
+        help_text="Optional display date (e.g. date of shoot). Defaults to creation date."
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

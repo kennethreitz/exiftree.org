@@ -160,6 +160,8 @@ class CollectionSchema(msgspec.Struct):
     slug: str
     description: str
     visibility: str
+    date: str | None = None
+    created_at: str = ''
     image_count: int = 0
 
 
@@ -177,12 +179,14 @@ class CollectionCreateInput(msgspec.Struct):
     title: str
     description: str = ''
     visibility: str = 'public'
+    date: str | None = None
 
 
 class CollectionUpdateInput(msgspec.Struct):
     title: str | None = None
     description: str | None = None
     visibility: str | None = None
+    date: str | None = None
 
 
 # Groups
@@ -616,6 +620,8 @@ async def user_collections(username: str) -> list[CollectionSchema]:
         collections.append(CollectionSchema(
             id=str(c.id), title=c.title, slug=c.slug,
             description=c.description, visibility=c.visibility,
+            date=str(c.date) if c.date else None,
+            created_at=c.created_at.isoformat(),
             image_count=c.image_count,
         ))
     return collections
@@ -655,17 +661,29 @@ async def create_collection(request: Request, data: CollectionCreateInput):
     while await Collection.objects.filter(user=request.user, slug=slug).aexists():
         slug = f"{base_slug}-{str(_uuid.uuid4())[:8]}"
 
+    from datetime import date as _date
+    date_val = None
+    if data.date:
+        try:
+            date_val = _date.fromisoformat(data.date)
+        except ValueError:
+            pass
+
     c = await Collection.objects.acreate(
         user=request.user,
         title=data.title,
         slug=slug,
         description=data.description,
         visibility=data.visibility,
+        date=date_val,
     )
     return Response(
         CollectionSchema(
             id=str(c.id), title=c.title, slug=c.slug,
-            description=c.description, visibility=c.visibility, image_count=0,
+            description=c.description, visibility=c.visibility,
+            date=str(c.date) if c.date else None,
+            created_at=c.created_at.isoformat(),
+            image_count=0,
         ),
         status_code=201,
     )
@@ -695,12 +713,22 @@ async def update_collection(
     if data.visibility is not None:
         c.visibility = data.visibility
         update_fields.append('visibility')
+    if data.date is not None:
+        from datetime import date as _date
+        try:
+            c.date = _date.fromisoformat(data.date) if data.date else None
+        except ValueError:
+            c.date = None
+        update_fields.append('date')
 
     await c.asave(update_fields=update_fields)
     count = await CollectionImage.objects.filter(collection=c).acount()
     return CollectionSchema(
         id=str(c.id), title=c.title, slug=c.slug,
-        description=c.description, visibility=c.visibility, image_count=count,
+        description=c.description, visibility=c.visibility,
+        date=str(c.date) if c.date else None,
+        created_at=c.created_at.isoformat(),
+        image_count=count,
     )
 
 

@@ -13,8 +13,8 @@
     const [cRes, lRes] = await Promise.all([
       fetch('/api/cameras'), fetch('/api/lenses')
     ]);
-    this.cameras = (await cRes.json()).slice(0, 8);
-    this.lenses = (await lRes.json()).slice(0, 8);
+    this.cameras = (await cRes.json()).filter(c => c.image_count >= 32).slice(0, 8);
+    this.lenses = (await lRes.json()).filter(l => l.image_count >= 32).slice(0, 8);
   }
 }">
   <section style="margin-bottom: 3rem;">

@@ -4,7 +4,7 @@
 <div x-data="{
   user: null, images: [], collections: [],
   editing: false, bio: '', website: '',
-  newSet: false, setTitle: '', setDesc: '',
+  newSet: false, setTitle: '', setDesc: '', setDate: '',
   addingTo: null,
   async load() {
     const token = localStorage.getItem('token');
@@ -45,7 +45,7 @@
     const res = await fetch('/api/collections', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: this.setTitle, description: this.setDesc }),
+      body: JSON.stringify({ title: this.setTitle, description: this.setDesc, date: this.setDate || null }),
     });
     if (res.ok) {
       const c = await res.json();
@@ -131,6 +131,8 @@
             style="padding: 0.5rem 0.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text);">
           <input type="text" x-model="setDesc" placeholder="Description (optional)"
             style="padding: 0.5rem 0.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text);">
+          <input type="date" x-model="setDate"
+            style="padding: 0.5rem 0.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); color-scheme: dark;">
           <button class="btn btn-primary" @click="createSet()" style="align-self: start;">Create</button>
         </div>
       </div>
@@ -141,6 +143,8 @@
             <a :href="'/@' + user.username + '/collections/' + c.slug + '/'" style="color: inherit;">
               <h3 x-text="c.title"></h3>
               <span class="count" x-text="c.image_count + ' images'"></span>
+              <span class="count" x-show="c.date" x-text="' · ' + c.date"></span>
+              <span class="count" x-show="!c.date" x-text="' · ' + new Date(c.created_at).toLocaleDateString()"></span>
             </a>
             <button @click="deleteSet(c.id)"
               style="margin-top: 0.5rem; background: none; border: none; color: #f44; cursor: pointer; font-size: 0.8rem; padding: 0;">
