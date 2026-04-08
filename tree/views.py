@@ -1,7 +1,7 @@
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, render
 
-from core.models import Camera, Image, Lens
+from core.models import Camera, Image, Lens, Tag
 
 
 def camera_list(request):
@@ -58,6 +58,27 @@ def lens_list(request):
         'selected_brand': brand,
         'query': q,
     })
+
+
+def tag_cloud(request):
+    tags = (
+        Tag.objects.annotate(image_count=Count('images'))
+        .filter(image_count__gt=0)
+        .order_by('-image_count')
+    )
+    return render(request, 'tree/tag_cloud.html', {'tags': tags})
+
+
+def tag_detail(request, slug):
+    tag = get_object_or_404(Tag, slug=slug)
+    images = (
+        Image.objects.filter(
+            tags=tag, visibility=Image.Visibility.PUBLIC, is_processing=False,
+        )
+        .select_related('user', 'exif', 'exif__camera', 'exif__lens')
+        .order_by('-upload_date')[:50]
+    )
+    return render(request, 'tree/tag_detail.html', {'tag': tag, 'images': images})
 
 
 def lens_detail(request, slug):

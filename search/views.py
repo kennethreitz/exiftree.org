@@ -23,7 +23,13 @@ def search(request):
 
     if q:
         from django.db.models import Q
-        qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
+        qs = qs.filter(
+            Q(title__icontains=q) |
+            Q(description__icontains=q) |
+            Q(ai_title__icontains=q) |
+            Q(ai_description__icontains=q) |
+            Q(tags__name__icontains=q)
+        ).distinct()
     if camera:
         qs = qs.filter(exif__camera_id=camera)
     if lens:

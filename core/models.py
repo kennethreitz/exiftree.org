@@ -11,6 +11,15 @@ class SiteConfig(models.Model):
         max_length=255, blank=True,
         default="Browse photography through the gear that made it."
     )
+    openai_api_key = models.CharField(
+        max_length=255, blank=True,
+        help_text="OpenAI API key for AI image descriptions"
+    )
+    ai_prompt = models.TextField(
+        blank=True,
+        default="Describe this photograph in 2-3 sentences. Focus on the subject, mood, composition, and lighting. Be concise and evocative.",
+        help_text="Prompt sent to the AI for image descriptions",
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -92,6 +101,19 @@ class Lens(models.Model):
         return self.display_name
 
 
+class Tag(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100, unique=True)
+    slug = models.SlugField(max_length=100, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self) -> str:
+        return self.name
+
+
 class Image(models.Model):
     class Visibility(models.TextChoices):
         PUBLIC = 'public', "Public"
@@ -102,6 +124,12 @@ class Image(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='images')
     title = models.CharField(max_length=255, blank=True)
     description = models.TextField(blank=True)
+    ai_title = models.CharField(
+        max_length=255, blank=True, help_text="AI-generated artistic title"
+    )
+    ai_description = models.TextField(
+        blank=True, help_text="AI-generated description of the image"
+    )
     slug = models.SlugField(max_length=255)
     original = models.ImageField(upload_to='originals/%Y/%m/')
     thumbnail_small = models.ImageField(upload_to='thumbs/small/', blank=True)
@@ -118,6 +146,7 @@ class Image(models.Model):
         max_length=16, blank=True, db_index=True,
         help_text="Perceptual hash for visual similarity detection"
     )
+    tags = models.ManyToManyField(Tag, blank=True, related_name='images')
     view_count = models.PositiveIntegerField(default=0)
     is_processing = models.BooleanField(default=True)
     upload_date = models.DateTimeField(auto_now_add=True, db_index=True)

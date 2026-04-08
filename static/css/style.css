@@ -513,6 +513,39 @@ a:hover { color: var(--accent-hover); }
 .vis-private { background: #d33; color: #fff; }
 .vis-unlisted { background: #c80; color: #fff; }
 
+/* Tag cloud */
+.tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  padding: 1rem 0;
+}
+
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 0.9rem;
+  transition: all 0.15s;
+}
+.tag-pill:hover { border-color: var(--accent); color: var(--accent); }
+
+.tag-count {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  background: var(--border);
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  min-width: 1.2rem;
+  text-align: center;
+}
+
 /* Footer */
 .site-footer {
   padding: 2rem;

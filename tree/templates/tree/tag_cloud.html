@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Tags — {{ site_title }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Tags</h1>
+  <p>Browse photos by tag</p>
+</div>
+
+<div class="tag-cloud">
+  {% for tag in tags %}
+  <a href="/tags/{{ tag.slug }}/" class="tag-pill">{{ tag.name }}<span class="tag-count">{{ tag.image_count }}</span></a>
+  {% empty %}
+  <div class="empty">No tags yet. Tags are generated automatically when AI descriptions are enabled.</div>
+  {% endfor %}
+</div>
+{% endblock %}

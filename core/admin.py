@@ -1,18 +1,29 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from core.models import Camera, ExifData, Image, Lens, SiteConfig, User
+from core.models import Camera, ExifData, Image, Lens, SiteConfig, Tag, User
 
 
 @admin.register(SiteConfig)
 class SiteConfigAdmin(admin.ModelAdmin):
     list_display = ['site_title', 'tagline']
+    fieldsets = [
+        ("Site", {'fields': ('site_title', 'tagline')}),
+        ("AI", {'fields': ('openai_api_key', 'ai_prompt')}),
+    ]
 
     def has_add_permission(self, request):
         return not SiteConfig.objects.exists()
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(Tag)
+class TagAdmin(admin.ModelAdmin):
+    list_display = ['name', 'slug']
+    search_fields = ['name']
+    prepopulated_fields = {'slug': ('name',)}
 
 
 @admin.register(User)
