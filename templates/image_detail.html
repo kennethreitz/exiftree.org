@@ -103,7 +103,7 @@
   <div id="map" style="height: 250px; border-radius: var(--radius); margin: 1rem 0;"></div>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      var map = L.map('map').setView([{{ image.exif.gps_latitude }}, {{ image.exif.gps_longitude }}], 13);
+      var map = L.map('map').setView([{{ image.exif.gps_latitude }}, {{ image.exif.gps_longitude }}], 5);
       L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; OSM &copy; CARTO', maxZoom: 19,
       }).addTo(map);

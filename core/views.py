@@ -9,20 +9,44 @@ from core.models import ExifData, Image
 from gallery.models import Collection
 
 
+PAGE_SIZE = 48
+
+
 def home(request):
+    import random
+
     year = request.GET.get('year')
+    page = int(request.GET.get('page', 1))
+
     qs = Image.objects.filter(
         visibility=Image.Visibility.PUBLIC, is_processing=False,
-    ).select_related('user', 'exif', 'exif__camera', 'exif__lens')
+    )
 
     if year:
         qs = qs.filter(exif__date_taken__year=year)
 
-    import random
-    ids = list(qs.values_list('id', flat=True))
-    if len(ids) > 48:
-        ids = random.sample(ids, 48)
-    images = qs.filter(id__in=ids)
+    # Shuffle with a stable seed per session so pagination is consistent
+    seed = request.session.get('shuffle_seed')
+    if not seed or request.GET.get('reshuffle'):
+        seed = random.randint(0, 2**31)
+        request.session['shuffle_seed'] = seed
+
+    all_ids = list(qs.values_list('id', flat=True))
+    rng = random.Random(seed)
+    rng.shuffle(all_ids)
+
+    # Paginate the shuffled IDs
+    start = (page - 1) * PAGE_SIZE
+    page_ids = all_ids[start:start + PAGE_SIZE]
+    has_more = start + PAGE_SIZE < len(all_ids)
+
+    images = (
+        Image.objects.filter(id__in=page_ids)
+        .select_related('user', 'exif', 'exif__camera', 'exif__lens')
+    )
+    # Preserve shuffle order
+    id_order = {uid: i for i, uid in enumerate(page_ids)}
+    images = sorted(images, key=lambda img: id_order[img.id])
 
     years = (
         ExifData.objects.filter(date_taken__isnull=False)
@@ -32,10 +56,22 @@ def home(request):
         .order_by('-year')
     )
 
+    # HTMX partial for infinite scroll
+    if request.headers.get('HX-Request'):
+        return render(request, 'includes/image_grid_page.html', {
+            'images': images,
+            'page': page,
+            'has_more': has_more,
+            'selected_year': year,
+        })
+
     return render(request, 'home.html', {
         'images': images,
         'years': list(years),
         'selected_year': year,
+        'page': page,
+        'has_more': has_more,
+        'total_count': len(all_ids),
     })
 
 
