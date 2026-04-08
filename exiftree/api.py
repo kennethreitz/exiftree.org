@@ -1031,28 +1031,22 @@ class FlickrImportInput(msgspec.Struct):
 @rate_limit(rps=1, key="ip")
 async def start_flickr_import(request: Request, data: FlickrImportInput):
     from asgiref.sync import sync_to_async
-    from ingest.tasks import flickr_import_task
+    from ingest.tasks import flickr_import_all_task
 
     try:
-        await sync_to_async(flickr_import_task.apply_async)(
+        await sync_to_async(flickr_import_all_task.apply_async)(
             args=[data.flickr_user, data.api_key, request.user.username],
-            kwargs={'set_id': data.set_id, 'max_photos': data.max},
+            kwargs={'set_id': data.set_id},
             ignore_result=True,
         )
     except Exception:
-        # No Celery — run synchronously
-        from django.core.management import call_command
-        from io import StringIO
-        out = StringIO()
-        args = [data.flickr_user, '--api-key', data.api_key, '--user', request.user.username]
-        if data.set_id:
-            args += ['--set', data.set_id]
-        if data.max:
-            args += ['--max', str(data.max)]
-        await sync_to_async(call_command)('import_flickr', *args, stdout=out)
-        return Response({"message": "Import complete", "detail": out.getvalue()}, status_code=200)
+        # No Celery — fall back to CLI
+        return Response({
+            "message": "No background worker available. Run from CLI instead.",
+            "detail": f"uv run python manage.py import_flickr {data.flickr_user}",
+        }, status_code=503)
 
-    return Response({"message": "Import started in background"}, status_code=202)
+    return Response({"message": "Import started — dispatching sets to background workers"}, status_code=202)
 
 
 # ---------------------------------------------------------------------------
