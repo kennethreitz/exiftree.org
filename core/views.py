@@ -9,6 +9,10 @@ def image_detail(request, image_id):
     return render(request, 'image_detail.html', {'image_id': image_id})
 
 
+def dashboard(request):
+    return render(request, 'dashboard.html')
+
+
 def register_view(request):
     return render(request, 'registration/register.html')
 

@@ -18,20 +18,26 @@
       <a href="{% url 'search:search' %}">Search</a>
       <a href="{% url 'groups:group-list' %}">Groups</a>
     </div>
-    <div class="nav-auth" x-data="{ user: null }" x-init="
+    <div class="nav-auth" x-data="{ user: null, open: false }" x-init="
       try {
         const token = localStorage.getItem('token');
         if (token) {
           const res = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
           if (res.ok) user = await res.json();
+          else localStorage.removeItem('token');
         }
       } catch(e) {}
-    ">
+    " @click.outside="open = false">
       <template x-if="user">
-        <div class="nav-user">
-          <a :href="'/@' + user.username" x-text="'@' + user.username"></a>
-          <a href="{% url 'ingest:upload' %}">Upload</a>
-          <a href="#" @click.prevent="localStorage.removeItem('token'); location.reload()">Log out</a>
+        <div class="nav-user-dropdown">
+          <button class="nav-user-btn" @click="open = !open" x-text="user.username"></button>
+          <div class="dropdown-menu" x-show="open" x-transition>
+            <a :href="'/@' + user.username">Profile</a>
+            <a href="/dashboard/">Dashboard</a>
+            <a href="/upload/">Upload</a>
+            <hr>
+            <a href="#" @click.prevent="localStorage.removeItem('token'); location.href='/'">Log out</a>
+          </div>
         </div>
       </template>
       <template x-if="!user">

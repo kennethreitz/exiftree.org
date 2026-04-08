@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — ExifTree{% endblock %}
+{% block content %}
+<div x-data="{
+  user: null, images: [], editing: false,
+  bio: '', website: '',
+  async load() {
+    const token = localStorage.getItem('token');
+    if (!token) { window.location.href = '/login/'; return; }
+    const h = { 'Authorization': 'Bearer ' + token };
+    const [uRes, iRes] = await Promise.all([
+      fetch('/api/auth/me', { headers: h }),
+      fetch('/api/auth/me', { headers: h }).then(r => r.json()).then(u =>
+        fetch('/api/users/' + u.username + '/images')
+      ),
+    ]);
+    this.user = await uRes.json();
+    this.images = await iRes.json();
+    this.bio = this.user.bio;
+    this.website = this.user.website;
+  },
+  async saveProfile() {
+    const token = localStorage.getItem('token');
+    const res = await fetch('/api/auth/me', {
+      method: 'PATCH',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bio: this.bio, website: this.website }),
+    });
+    if (res.ok) { this.user = await res.json(); this.editing = false; }
+  },
+  async deleteImage(id) {
+    if (!confirm('Delete this image?')) return;
+    const token = localStorage.getItem('token');
+    await fetch('/api/images/' + id, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    this.images = this.images.filter(i => i.id !== id);
+  }
+}" x-init="load()">
+
+  <template x-if="user">
+    <div>
+      <!-- Profile Section -->
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: start;">
+        <div>
+          <h1 x-text="'@' + user.username"></h1>
+          <p style="color: var(--text-muted);" x-text="user.email"></p>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <a href="/upload/" class="btn btn-primary">Upload</a>
+          <button class="btn" @click="editing = !editing" x-text="editing ? 'Cancel' : 'Edit Profile'"></button>
+        </div>
+      </div>
+
+      <!-- Edit Profile Form -->
+      <div x-show="editing" style="margin-bottom: 2rem; max-width: 500px;">
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <div>
+            <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Bio</label>
+            <textarea x-model="bio" rows="3"
+              style="width: 100%; padding: 0.5rem 0.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); resize: vertical;"></textarea>
+          </div>
+          <div>
+            <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Website</label>
+            <input type="url" x-model="website"
+              style="width: 100%; padding: 0.5rem 0.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text);">
+          </div>
+          <button class="btn btn-primary" @click="saveProfile()" style="align-self: start;">Save</button>
+        </div>
+      </div>
+
+      <!-- Bio display -->
+      <div x-show="!editing && (user.bio || user.website)" style="margin-bottom: 2rem;">
+        <p x-show="user.bio" x-text="user.bio"></p>
+        <a x-show="user.website" :href="user.website" x-text="user.website" target="_blank" style="font-size: 0.9rem;"></a>
+      </div>
+
+      <!-- Stats -->
+      <div style="display: flex; gap: 2rem; margin-bottom: 2rem; font-size: 0.9rem; color: var(--text-muted);">
+        <span x-text="user.image_count + ' images'"></span>
+        <span x-text="user.collection_count + ' collections'"></span>
+      </div>
+
+      <!-- Images -->
+      <h2 style="font-size: 1.25rem; margin-bottom: 1rem;">Your Images</h2>
+      <div class="image-grid">
+        <template x-for="img in images" :key="img.id">
+          <div class="image-card" style="position: relative;">
+            <a :href="'/images/' + img.id + '/'">
+              <img :src="img.thumbnail_small" :alt="img.title" x-show="img.thumbnail_small">
+              <div class="overlay">
+                <div class="title" x-text="img.title || 'Untitled'"></div>
+              </div>
+            </a>
+            <button @click="deleteImage(img.id)"
+              style="position: absolute; top: 0.5rem; right: 0.5rem; background: rgba(0,0,0,0.7); border: none; color: #f44; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: var(--radius); font-size: 0.8rem;">
+              Delete
+            </button>
+          </div>
+        </template>
+        <div class="empty" x-show="images.length === 0">
+          No images yet. <a href="/upload/">Upload your first image</a>
+        </div>
+      </div>
+    </div>
+  </template>
+</div>
+{% endblock %}

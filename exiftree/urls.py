@@ -3,13 +3,14 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
-from core.views import home, image_detail, login_view, register_view
+from core.views import dashboard, home, image_detail, login_view, register_view
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", home, name="home"),
     path("login/", login_view, name="login"),
     path("register/", register_view, name="register"),
+    path("dashboard/", dashboard, name="dashboard"),
     path("images/<uuid:image_id>/", image_detail, name="image-detail"),
     path("", include("tree.urls")),
     path("", include("gallery.urls")),

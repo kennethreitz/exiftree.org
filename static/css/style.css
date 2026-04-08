@@ -52,7 +52,42 @@ a:hover { color: var(--accent-hover); }
 .nav-links a:hover { color: var(--text); }
 
 .nav-auth { margin-left: auto; display: flex; gap: 1rem; align-items: center; }
-.nav-user, .nav-guest { display: flex; gap: 1rem; align-items: center; font-size: 0.9rem; }
+.nav-guest { display: flex; gap: 1rem; align-items: center; font-size: 0.9rem; }
+
+/* User dropdown */
+.nav-user-dropdown { position: relative; }
+.nav-user-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: border-color 0.15s;
+}
+.nav-user-btn:hover { border-color: var(--text-muted); }
+.dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-width: 160px;
+  padding: 0.5rem 0;
+  z-index: 200;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.dropdown-menu a {
+  display: block;
+  padding: 0.5rem 1rem;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+.dropdown-menu a:hover { background: var(--border); color: var(--text); }
+.dropdown-menu hr { border: none; border-top: 1px solid var(--border); margin: 0.25rem 0; }
 
 /* Buttons */
 .btn {
