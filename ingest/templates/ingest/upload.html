@@ -12,13 +12,23 @@
     }
     this.uploadAll();
   },
+  concurrency: 6,
+  active: 0,
   async uploadAll() {
     const token = localStorage.getItem('token');
     if (!token) { this.error = 'Please log in first'; return; }
-    for (const item of this.files) {
-      if (item.status !== 'pending') continue;
+    this.drain(token);
+  },
+  drain(token) {
+    while (this.active < this.concurrency) {
+      const item = this.files.find(f => f.status === 'pending');
+      if (!item) return;
       item.status = 'uploading';
-      await this.uploadOne(item, token);
+      this.active++;
+      this.uploadOne(item, token).then(() => {
+        this.active--;
+        this.drain(token);
+      });
     }
   },
   uploadOne(item, token) {
