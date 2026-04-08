@@ -3,6 +3,7 @@
 {% block content %}
 <div x-data="{
   img: null,
+  dlOpen: false,
   async init() {
     const res = await fetch('/api/images/{{ image_id }}/');
     if (res.ok) this.img = await res.json();
@@ -16,13 +17,37 @@
              style="max-width: 100%; border-radius: var(--radius);">
       </div>
 
-      <h1 style="font-size: 1.5rem;" x-text="img.title || 'Untitled'"></h1>
-      <p style="color: var(--text-muted); margin-top: 0.25rem;">
-        by <a :href="'/@' + img.user.username" x-text="'@' + img.user.username"></a>
-        · <span x-text="new Date(img.upload_date).toLocaleDateString()"></span>
-        · <span x-text="img.view_count + ' views'"></span>
-      </p>
-      <p x-show="img.description" x-text="img.description" style="margin-top: 0.75rem;"></p>
+      <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h1 style="font-size: 1.5rem;" x-text="img.title || 'Untitled'"></h1>
+          <p style="color: var(--text-muted); margin-top: 0.25rem;">
+            by <a :href="'/@' + img.user.username" x-text="'@' + img.user.username"></a>
+            · <span x-text="new Date(img.upload_date).toLocaleDateString()"></span>
+            · <span x-text="img.view_count + ' views'"></span>
+          </p>
+          <p x-show="img.description" x-text="img.description" style="margin-top: 0.75rem;"></p>
+        </div>
+
+        <!-- Download dropdown -->
+        <div class="nav-user-dropdown" @click.outside="dlOpen = false">
+          <button class="btn" @click="dlOpen = !dlOpen">Download</button>
+          <div class="dropdown-menu" x-show="dlOpen" x-transition style="right: 0; min-width: 180px;">
+            <a :href="img.thumbnail_small" x-show="img.thumbnail_small" download>
+              <strong>S</strong> <span style="color: var(--text-muted);">Small (300px)</span>
+            </a>
+            <a :href="img.thumbnail_medium" x-show="img.thumbnail_medium" download>
+              <strong>M</strong> <span style="color: var(--text-muted);">Medium (800px)</span>
+            </a>
+            <a :href="img.thumbnail_large" x-show="img.thumbnail_large" download>
+              <strong>L</strong> <span style="color: var(--text-muted);">Large (1600px)</span>
+            </a>
+            <hr>
+            <a :href="img.original" x-show="img.original" download>
+              <strong>O</strong> <span style="color: var(--text-muted);">Original</span>
+            </a>
+          </div>
+        </div>
+      </div>
 
       <template x-if="img.exif">
         <div class="exif-bar">

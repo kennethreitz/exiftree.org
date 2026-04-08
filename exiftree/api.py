@@ -125,6 +125,7 @@ class ImageSchema(msgspec.Struct):
     thumbnail_small: str = ''
     thumbnail_medium: str = ''
     thumbnail_large: str = ''
+    original: str = ''
     exif: ExifSchema | None = None
 
 
@@ -266,6 +267,7 @@ def _image_schema(img: Image) -> ImageSchema:
         thumbnail_small=img.thumbnail_small.url if img.thumbnail_small else '',
         thumbnail_medium=img.thumbnail_medium.url if img.thumbnail_medium else '',
         thumbnail_large=img.thumbnail_large.url if img.thumbnail_large else '',
+        original=img.original.url if img.original else '',
         exif=exif_data,
     )
 
