@@ -6,10 +6,13 @@
   <p>Browse photography by lens</p>
 </div>
 
-<div class="gear-grid" x-data="{ lenses: [] }" x-init="
-  const res = await fetch('/api/lenses');
-  lenses = await res.json();
-">
+<div class="gear-grid" x-data="{
+  lenses: [],
+  async init() {
+    const res = await fetch('/api/lenses');
+    this.lenses = await res.json();
+  }
+}">
   <template x-for="l in lenses" :key="l.id">
     <a :href="'/lenses/' + l.slug + '/'" class="gear-card" style="color: inherit;">
       <h3 x-text="l.display_name"></h3>

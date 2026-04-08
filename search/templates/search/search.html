@@ -26,14 +26,15 @@
     this.results = data.images;
     this.total = data.total;
   }
-}" x-init="
-  const [cRes, lRes] = await Promise.all([
-    fetch('/api/cameras'), fetch('/api/lenses')
-  ]);
-  cameras = await cRes.json();
-  lenses = await lRes.json();
-  search();
-">
+  async init() {
+    const [cRes, lRes] = await Promise.all([
+      fetch('/api/cameras'), fetch('/api/lenses')
+    ]);
+    this.cameras = await cRes.json();
+    this.lenses = await lRes.json();
+    this.search();
+  }
+}">
   <form class="search-form" @submit.prevent="search()">
     <div class="field">
       <label>Keyword</label>

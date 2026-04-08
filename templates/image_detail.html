@@ -1,10 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Image — ExifTree{% endblock %}
 {% block content %}
-<div x-data="{ img: null }" x-init="
-  const res = await fetch('/api/images/{{ image_id }}/');
-  if (res.ok) img = await res.json();
-">
+<div x-data="{
+  img: null,
+  async init() {
+    const res = await fetch('/api/images/{{ image_id }}/');
+    if (res.ok) this.img = await res.json();
+  }
+}">
   <template x-if="img">
     <div>
       <div style="margin-bottom: 1.5rem;">

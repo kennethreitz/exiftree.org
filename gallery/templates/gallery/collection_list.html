@@ -5,10 +5,13 @@
   <h1>@{{ profile_user.username }}'s Collections</h1>
 </div>
 
-<div class="gear-grid" x-data="{ collections: [] }" x-init="
-  const res = await fetch('/api/collections/user/{{ profile_user.username }}');
-  collections = await res.json();
-">
+<div class="gear-grid" x-data="{
+  collections: [],
+  async init() {
+    const res = await fetch('/api/collections/user/{{ profile_user.username }}');
+    this.collections = await res.json();
+  }
+}">
   <template x-for="c in collections" :key="c.id">
     <a :href="'/@{{ profile_user.username }}/collections/' + c.slug + '/'" class="gear-card" style="color: inherit;">
       <h3 x-text="c.title"></h3>

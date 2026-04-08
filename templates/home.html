@@ -6,13 +6,17 @@
   <p style="color: var(--text-muted); font-size: 1.1rem; margin-top: 0.5rem;">Browse photography through the gear that made it.</p>
 </div>
 
-<div x-data="{ cameras: [], lenses: [] }" x-init="
-  const [cRes, lRes] = await Promise.all([
-    fetch('/api/cameras'), fetch('/api/lenses')
-  ]);
-  cameras = (await cRes.json()).slice(0, 8);
-  lenses = (await lRes.json()).slice(0, 8);
-">
+<div x-data="{
+  cameras: [],
+  lenses: [],
+  async init() {
+    const [cRes, lRes] = await Promise.all([
+      fetch('/api/cameras'), fetch('/api/lenses')
+    ]);
+    this.cameras = (await cRes.json()).slice(0, 8);
+    this.lenses = (await lRes.json()).slice(0, 8);
+  }
+}">
   <section style="margin-bottom: 3rem;">
     <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1rem;">
       <h2 style="font-size: 1.25rem;">Cameras</h2>

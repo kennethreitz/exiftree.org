@@ -1,14 +1,18 @@
 {% extends "base.html" %}
 {% block title %}{{ group.name }} — ExifTree{% endblock %}
 {% block content %}
-<div x-data="{ group: null, images: [] }" x-init="
-  const [gRes, iRes] = await Promise.all([
-    fetch('/api/groups/{{ group.slug }}'),
-    fetch('/api/groups/{{ group.slug }}/images'),
-  ]);
-  group = await gRes.json();
-  images = await iRes.json();
-">
+<div x-data="{
+  group: null,
+  images: [],
+  async init() {
+    const [gRes, iRes] = await Promise.all([
+      fetch('/api/groups/{{ group.slug }}'),
+      fetch('/api/groups/{{ group.slug }}/images'),
+    ]);
+    this.group = await gRes.json();
+    this.images = await iRes.json();
+  }
+}">
   <template x-if="group">
     <div>
       <div class="page-header">

@@ -1,10 +1,13 @@
 {% extends "base.html" %}
 {% block title %}{{ collection.title }} — ExifTree{% endblock %}
 {% block content %}
-<div x-data="{ col: null }" x-init="
-  const res = await fetch('/api/collections/{{ collection.id }}');
-  col = await res.json();
-">
+<div x-data="{
+  col: null,
+  async init() {
+    const res = await fetch('/api/collections/{{ collection.id }}');
+    this.col = await res.json();
+  }
+}">
   <template x-if="col">
     <div>
       <div class="collection-header">

@@ -6,10 +6,13 @@
   <p>{{ lens.manufacturer }}</p>
 </div>
 
-<div class="image-grid" x-data="{ images: [] }" x-init="
-  const res = await fetch('/api/lenses/{{ lens.id }}/images');
-  images = await res.json();
-">
+<div class="image-grid" x-data="{
+  images: [],
+  async init() {
+    const res = await fetch('/api/lenses/{{ lens.id }}/images');
+    this.images = await res.json();
+  }
+}">
   <template x-for="img in images" :key="img.id">
     <a :href="'/images/' + img.id + '/'" class="image-card">
       <img :src="img.thumbnail_small" :alt="img.title" x-show="img.thumbnail_small">
