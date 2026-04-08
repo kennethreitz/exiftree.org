@@ -145,6 +145,11 @@ class ImageListSchema(msgspec.Struct):
     upload_date: str
     thumbnail_small: str = ''
     thumbnail_medium: str = ''
+    camera: str = ''
+    lens: str = ''
+    focal_length: float | None = None
+    aperture: float | None = None
+    iso: int | None = None
 
 
 class ImageUpdateInput(msgspec.Struct):
@@ -249,11 +254,30 @@ def _lens_schema(l: Lens, image_count: int = 0) -> LensSchema:
 
 
 def _image_list_schema(img: Image) -> ImageListSchema:
+    camera = ''
+    lens = ''
+    focal_length = None
+    aperture = None
+    iso = None
+    try:
+        exif = img.exif
+        if exif:
+            if exif.camera:
+                camera = exif.camera.display_name
+            if exif.lens:
+                lens = exif.lens.display_name
+            focal_length = float(exif.focal_length) if exif.focal_length else None
+            aperture = float(exif.aperture) if exif.aperture else None
+            iso = exif.iso
+    except Exception:
+        pass
     return ImageListSchema(
         id=str(img.id), title=img.title, slug=img.slug,
         user=img.user.username, upload_date=img.upload_date.isoformat(),
         thumbnail_small=img.thumbnail_small.url if img.thumbnail_small else '',
         thumbnail_medium=img.thumbnail_medium.url if img.thumbnail_medium else '',
+        camera=camera, lens=lens, focal_length=focal_length,
+        aperture=aperture, iso=iso,
     )
 
 
@@ -292,7 +316,7 @@ def _public_images_qs():
             visibility=Image.Visibility.PUBLIC,
             is_processing=False,
         )
-        .select_related('user')
+        .select_related('user', 'exif', 'exif__camera', 'exif__lens')
     )
 
 
