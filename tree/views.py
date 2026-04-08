@@ -27,5 +27,5 @@ def lens_list(request):
 
 
 def lens_detail(request, manufacturer, model):
-    lens = get_object_or_404(Lens, slug=f"{manufacturer}-{model}")
+    lens = get_object_or_404(Lens, slug=model)
     return render(request, 'tree/lens_detail.html', {'lens': lens})
