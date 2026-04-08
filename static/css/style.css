@@ -254,8 +254,18 @@ a:hover { color: var(--accent-hover); }
 .auth-form .alt { text-align: center; margin-top: 1rem; font-size: 0.9rem; color: var(--text-muted); }
 
 /* Upload */
-.upload-page { min-height: 60vh; }
-.upload-page-dragover { background: rgba(74, 158, 255, 0.05); }
+.upload-page { min-height: 70vh; position: relative; }
+.upload-dropoverlay {
+  display: none;
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(232, 168, 32, 0.08);
+  border: 3px dashed var(--accent);
+  z-index: 999;
+  pointer-events: none;
+  align-items: center; justify-content: center;
+  font-size: 1.5rem; color: var(--accent); font-weight: 700;
+}
+.upload-page-dragover .upload-dropoverlay { display: flex; }
 .upload-zone {
   border: 2px dashed var(--border);
   border-radius: var(--radius);

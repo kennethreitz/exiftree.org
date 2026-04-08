@@ -68,12 +68,13 @@
     });
   }
 }"
-  @dragover.prevent="dragover = true"
-  @dragleave.prevent="dragover = false"
-  @drop.prevent="dragover = false; addFiles($event.dataTransfer.files)"
+  @dragover.window.prevent="dragover = true"
+  @dragleave.window.prevent="if (!$event.relatedTarget) dragover = false"
+  @drop.window.prevent="dragover = false; addFiles($event.dataTransfer.files)"
   :class="{ 'upload-page-dragover': dragover }"
   class="upload-page"
 >
+  <div class="upload-dropoverlay">Drop images to upload</div>
 
   <div class="page-header">
     <h1>Upload</h1>
