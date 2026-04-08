@@ -2,7 +2,7 @@
 
 ## Project
 
-ExifTree — a community platform where visual creators showcase work organized by the gear used to create it. Browse photography through cameras, lenses, and EXIF metadata.
+ExifTree — a personal photography portfolio organized by the gear used to create it. Browse photos through cameras, lenses, and EXIF metadata.
 
 **Domain:** exiftree.org
 **Stack:** Django 5.x · Python 3.12+ · PostgreSQL · Celery + Redis
@@ -26,10 +26,11 @@ The project is organized into focused Django apps:
 
 - `core` — foundational models (User, Image, Camera, Lens, ExifData). Other apps import from here but never the reverse.
 - `tree` — browse-by-gear discovery pages. No models, reads from core.
-- `gallery` — user portfolios and collections.
-- `groups` — community spaces and memberships.
+- `gallery` — collections for organizing photos.
 - `ingest` — upload pipeline, EXIF extraction, thumbnail generation.
 - `search` — EXIF-powered filtering and search.
+
+**Single-tenant:** This is a single-photographer tool. There is one owner account; there are no public user profiles, user listings, groups, or community features.
 
 **Dependency rule:** `core` depends on nothing. All other apps may depend on `core`. Avoid cross-dependencies between feature apps — if two apps need to share logic, it probably belongs in `core`.
 
@@ -73,16 +74,14 @@ Django templates + HTMX for interactivity unless otherwise decided. Keep JavaScr
 PostgreSQL. Key indexing priorities:
 
 - ExifData: camera_id, lens_id, focal_length, aperture, iso, date_taken
-- Image: user_id, upload_date, visibility
+- Image: upload_date, visibility
 - Camera/Lens: slug, manufacturer
 
 ## URLs
 
 - Camera tree: `/cameras/`, `/cameras/<manufacturer>/`, `/cameras/<manufacturer>/<model>/`
 - Lens tree: `/lenses/`, `/lenses/<manufacturer>/<model>/`
-- User profiles: `/@<username>/`
-- Collections: `/@<username>/collections/<slug>/`
-- Groups: `/groups/<slug>/`
+- Collections: `/collections/`, `/collections/<slug>/`
 
 ## When Working on This Project
 

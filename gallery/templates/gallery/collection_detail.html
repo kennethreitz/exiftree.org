@@ -1,97 +1,25 @@
 {% extends "base.html" %}
-{% block title %}{{ collection.title }} — ExifTree{% endblock %}
+{% block title %}{{ collection.title }} — {{ site_title }}{% endblock %}
 {% block content %}
-<div x-data="{
-  col: null,
-  currentUser: null,
-  isOwner: false,
-  editing: false,
-  allImages: [],
-  colImageIds: new Set(),
-  async init() {
-    const res = await fetch('/api/collections/{{ collection.id }}');
-    this.col = await res.json();
-    this.colImageIds = new Set(this.col.images.map(i => i.id));
+<div class="collection-header">
+  <h1>{{ collection.title }}</h1>
+  {% if collection.description %}<p class="desc">{{ collection.description }}</p>{% endif %}
+  <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+    {{ images|length }} images
+  </p>
+</div>
 
-    const token = localStorage.getItem('token');
-    if (token) {
-      const me = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
-      if (me.ok) {
-        this.currentUser = await me.json();
-        this.isOwner = this.currentUser.id === this.col.user.id;
-      }
-    }
-  },
-  async startEditing() {
-    this.editing = true;
-    if (!this.allImages.length) {
-      const res = await fetch('/api/users/' + this.col.user.username + '/images');
-      this.allImages = await res.json();
-    }
-  },
-  async toggleImage(imageId) {
-    const token = localStorage.getItem('token');
-    const h = { 'Authorization': 'Bearer ' + token };
-    if (this.colImageIds.has(imageId)) {
-      await fetch('/api/collections/{{ collection.id }}/images/' + imageId, { method: 'DELETE', headers: h });
-      this.colImageIds.delete(imageId);
-      this.col.images = this.col.images.filter(i => i.id !== imageId);
-    } else {
-      await fetch('/api/collections/{{ collection.id }}/images/' + imageId, { method: 'POST', headers: h });
-      this.colImageIds.add(imageId);
-      const img = this.allImages.find(i => i.id === imageId);
-      if (img) this.col.images.push(img);
-    }
-  }
-}">
-  <template x-if="col">
-    <div>
-      <div class="collection-header" style="display: flex; justify-content: space-between; align-items: start;">
-        <div>
-          <h1 x-text="col.title"></h1>
-          <p class="desc" x-text="col.description" x-show="col.description"></p>
-          <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
-            by <a :href="'/@' + col.user.username" x-text="'@' + col.user.username"></a>
-            · <span x-text="col.images.length + ' images'"></span>
-          </p>
-        </div>
-        <button x-show="isOwner" class="btn" @click="editing ? (editing = false) : startEditing()"
-                x-text="editing ? 'Done' : 'Edit'"></button>
-      </div>
-
-      <!-- Edit mode: pick photos -->
-      <div x-show="editing" style="margin-bottom: 2rem;">
-        <p style="color: var(--text-muted); margin-bottom: 1rem; font-size: 0.9rem;">Click images to add or remove them from this collection.</p>
-        <div class="image-grid">
-          <template x-for="img in allImages" :key="img.id">
-            <div class="image-card" :class="colImageIds.has(img.id) ? 'image-card-selected' : ''"
-                 style="cursor: pointer;" @click="toggleImage(img.id)">
-              <img :src="img.thumbnail_medium || img.thumbnail_small" :alt="img.title">
-              <div x-show="colImageIds.has(img.id)"
-                   style="position: absolute; top: 0.5rem; left: 0.5rem; background: var(--accent); color: #000; font-weight: 700; width: 1.5rem; height: 1.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">
-                ✓
-              </div>
-            </div>
-          </template>
-        </div>
-      </div>
-
-      <!-- View mode: collection images -->
-      <div x-show="!editing">
-        <div class="image-grid">
-          <template x-for="(img, i) in col.images" :key="img.id">
-            <div>
-              <div class="image-card" @click="openLightbox(col.images, i)" style="cursor: pointer;">
-                <img :src="img.thumbnail_medium || img.thumbnail_small" :alt="img.title">
-                {% include "includes/image_overlay.html" %}
-              </div>
-              {% if not SINGLE_TENANT %}<a :href="'/@' + img.user" class="image-card-user" x-text="'@' + img.user"></a>{% endif %}
-            </div>
-          </template>
-          <div class="empty" x-show="col.images.length === 0">This collection is empty.</div>
-        </div>
-      </div>
-    </div>
-  </template>
+<div class="image-grid">
+  {% for img in images %}
+  <div>
+    <a href="/images/{{ img.id }}/" class="image-card">
+      {% if img.thumbnail_medium %}<img src="{{ img.thumbnail_medium.url }}" alt="{{ img.title }}">
+      {% elif img.thumbnail_small %}<img src="{{ img.thumbnail_small.url }}" alt="{{ img.title }}">{% endif %}
+      {% include "includes/image_overlay.html" %}
+    </a>
+  </div>
+  {% empty %}
+  <div class="empty" style="grid-column: 1 / -1;">This collection is empty.</div>
+  {% endfor %}
 </div>
 {% endblock %}

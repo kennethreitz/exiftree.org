@@ -4,6 +4,32 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
+class SiteConfig(models.Model):
+    """Singleton site configuration — only one row should ever exist."""
+    site_title = models.CharField(max_length=255, default='ExifTree')
+    tagline = models.CharField(
+        max_length=255, blank=True,
+        default="Browse photography through the gear that made it."
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'site configuration'
+        verbose_name_plural = 'site configuration'
+
+    def __str__(self) -> str:
+        return self.site_title
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def load(cls) -> 'SiteConfig':
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
 class User(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     bio = models.TextField(blank=True)

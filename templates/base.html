@@ -3,35 +3,42 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}ExifTree{% endblock %}</title>
+  <title>{% block title %}{{ site_title }}{% endblock %}</title>
   <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
   {% block head %}{% endblock %}
 </head>
 <body>
   <nav class="site-nav">
-    <a href="/" class="nav-brand">ExifTree</a>
+    <a href="/" class="nav-brand">{{ site_title }}</a>
     <div class="nav-links">
       <a href="{% url 'tree:camera-list' %}">Cameras</a>
       <a href="{% url 'tree:lens-list' %}">Lenses</a>
-      {% if SINGLE_TENANT %}<a href="/@{{ SINGLE_TENANT }}/collections/">Collections</a>{% else %}<a href="{% url 'users' %}">Users</a>{% endif %}
+      <a href="{% url 'gallery:collection-list' %}">Collections</a>
       <a href="{% url 'search:search' %}">Search</a>
     </div>
-    <div class="nav-auth" id="nav-auth">
-      <div class="nav-guest" id="nav-guest">
-        <a href="{% url 'login' %}">Log in</a>
-        {% if not SINGLE_TENANT %}<a href="{% url 'register' %}" class="btn btn-primary">Sign up</a>{% endif %}
-      </div>
-      <div class="nav-user-dropdown" id="nav-user" style="display: none;">
-        <button class="nav-user-btn" id="nav-user-btn" onclick="document.getElementById('nav-dropdown').style.display = document.getElementById('nav-dropdown').style.display === 'block' ? 'none' : 'block'"></button>
+    <div class="nav-auth">
+      {% if user.is_authenticated %}
+      <div class="nav-user-dropdown">
+        <button class="nav-user-btn" id="nav-user-btn"
+                onclick="document.getElementById('nav-dropdown').style.display = document.getElementById('nav-dropdown').style.display === 'block' ? 'none' : 'block'">
+          @{{ user.username }}
+        </button>
         <div class="dropdown-menu" id="nav-dropdown" style="display: none;">
-          <a id="nav-profile-link" href="#">Profile</a>
           <a href="/dashboard/">Dashboard</a>
+          <a href="/manage/">Manage Photos</a>
           <a href="/upload/">Upload</a>
           <a href="/import/flickr/">Import from Flickr</a>
           <hr>
-          <a href="#" onclick="localStorage.removeItem('token'); location.href='/';">Log out</a>
+          <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button type="submit" style="background: none; border: none; color: var(--text); cursor: pointer; padding: 0.5rem 1rem; font-size: 0.9rem; width: 100%; text-align: left;">Log out</button>
+          </form>
         </div>
       </div>
+      {% else %}
+      <a href="{% url 'login' %}">Log in</a>
+      {% endif %}
     </div>
   </nav>
 
@@ -40,25 +47,10 @@
   </main>
 
   <footer class="site-footer">
-    <p>ExifTree — browse photography through the gear that made it.</p>
+    <p>{{ site_title }}{% if site_tagline %} — {{ site_tagline }}{% endif %}</p>
   </footer>
 
   <script>
-    // Auth check — minimal JS, no framework
-    (async function() {
-      var token = localStorage.getItem('token');
-      if (!token) return;
-      try {
-        var res = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
-        if (!res.ok) { localStorage.removeItem('token'); return; }
-        var user = await res.json();
-        document.getElementById('nav-guest').style.display = 'none';
-        document.getElementById('nav-user').style.display = '';
-        document.getElementById('nav-user-btn').textContent = '@' + user.username;
-        document.getElementById('nav-profile-link').href = '/@' + user.username;
-      } catch(e) {}
-    })();
-    // Close dropdown on outside click
     document.addEventListener('click', function(e) {
       var dd = document.getElementById('nav-dropdown');
       var btn = document.getElementById('nav-user-btn');

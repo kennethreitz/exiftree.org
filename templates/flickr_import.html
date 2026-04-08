@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Import from Flickr — ExifTree{% endblock %}
+{% block title %}Import from Flickr — {{ site_title }}{% endblock %}
 {% block content %}
 <div class="page-header">
   <h1>Import from Flickr</h1>
@@ -7,6 +7,7 @@
 </div>
 
 <form id="import-form" style="max-width: 500px;">
+  {% csrf_token %}
   <div class="field" style="margin-bottom: 1rem;">
     <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Flickr Username</label>
     <input type="text" id="flickr-user" required placeholder="e.g. kennethreitz"
@@ -48,9 +49,6 @@ document.getElementById('import-form').addEventListener('submit', async function
   var statusDiv = document.getElementById('import-status');
   var statusText = document.getElementById('status-text');
   var error = document.getElementById('import-error');
-  var token = localStorage.getItem('token');
-
-  if (!token) { window.location.href = '/login/'; return; }
 
   btn.disabled = true;
   btn.textContent = 'Importing... (this may take a while)';
@@ -62,8 +60,8 @@ document.getElementById('import-form').addEventListener('submit', async function
     var res = await fetch('/api/import/flickr', {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer ' + token,
         'Content-Type': 'application/json',
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
       },
       body: JSON.stringify({
         flickr_user: document.getElementById('flickr-user').value,
@@ -79,20 +77,13 @@ document.getElementById('import-form').addEventListener('submit', async function
     if (res.ok) {
       statusDiv.style.display = 'block';
       statusText.textContent = data.message || 'Import complete!';
-      if (data.detail) {
-        statusText.textContent += '\n' + data.detail.substring(0, 500);
-      }
     } else {
       error.style.display = 'block';
-      if (data.detail && typeof data.detail === 'object') {
-        error.textContent = JSON.stringify(data.detail, null, 2);
-      } else {
-        error.textContent = data.detail || data.message || text || 'Import failed';
-      }
+      error.textContent = data.detail || data.message || 'Import failed';
     }
   } catch(err) {
     error.style.display = 'block';
-    error.textContent = 'Request failed: ' + err.message + ' (try Chrome or disable browser extensions)';
+    error.textContent = 'Request failed: ' + err.message;
   }
 
   btn.disabled = false;

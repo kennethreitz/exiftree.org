@@ -17,8 +17,7 @@
   <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 1rem;">
     <div>
       <p style="color: var(--text-muted);">
-        by <a href="/@{{ image.user.username }}">@{{ image.user.username }}</a>
-        · {{ image.upload_date|date:"N j, Y" }}
+        {{ image.upload_date|date:"N j, Y" }}
         · {{ image.view_count }} views
       </p>
       {% if image.description %}<p style="margin-top: 0.5rem;">{{ image.description }}</p>{% endif %}

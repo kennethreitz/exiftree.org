@@ -1,7 +1,9 @@
-from django.conf import settings
+from core.models import SiteConfig
 
 
 def site_context(request):
+    config = SiteConfig.load()
     return {
-        'SINGLE_TENANT': settings.SINGLE_TENANT,
+        'site_title': config.site_title,
+        'site_tagline': config.tagline,
     }

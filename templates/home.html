@@ -1,9 +1,8 @@
 {% extends "base.html" %}
-{% block title %}ExifTree — Browse photography through the gear that made it{% endblock %}
+{% block title %}{{ site_title }}{% if site_tagline %} — {{ site_tagline }}{% endif %}{% endblock %}
 {% block content %}
 <div style="text-align: center; padding: 2rem 0 1.5rem;">
-  <h1 style="font-size: 2.5rem; letter-spacing: -0.03em;">ExifTree</h1>
-  {% if SINGLE_TENANT %}
+  <h1 style="font-size: 2.5rem; letter-spacing: -0.03em;">{{ site_title }}</h1>
   <div style="margin-top: 0.75rem;">
     <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center;">
       <a href="/" class="brand-pill {% if not selected_year %}brand-pill-active{% endif %}">All</a>
@@ -12,9 +11,6 @@
       {% endfor %}
     </div>
   </div>
-  {% else %}
-  <p style="color: var(--text-muted); font-size: 1.1rem; margin-top: 0.5rem;">Browse photography through the gear that made it.</p>
-  {% endif %}
 </div>
 
 <div class="image-grid" style="grid-template-columns: repeat(4, 1fr);">
@@ -25,10 +21,9 @@
       {% elif img.thumbnail_small %}<img src="{{ img.thumbnail_small.url }}" alt="{{ img.title }}">{% endif %}
       {% include "includes/image_overlay.html" %}
     </a>
-    {% if not SINGLE_TENANT %}<a href="/@{{ img.user.username }}" class="image-card-user">@{{ img.user.username }}</a>{% endif %}
   </div>
   {% empty %}
-  <div class="empty" style="grid-column: 1 / -1;">No images yet. Be the first to <a href="/upload/">upload</a>.</div>
+  <div class="empty" style="grid-column: 1 / -1;">No images yet. <a href="/upload/">Upload</a> some photos.</div>
   {% endfor %}
 </div>
 {% endblock %}

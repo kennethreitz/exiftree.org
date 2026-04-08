@@ -30,9 +30,6 @@ DEBUG = os.environ.get("DEBUG", "1") == "1"
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
 CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", "https://exiftree.fly.dev,https://exiftree.org").split(",")
 
-# Single-tenant mode — set to a username to disable multi-user UI
-SINGLE_TENANT = os.environ.get("SINGLE_TENANT", "")
-
 
 # Application definition
 
@@ -48,7 +45,6 @@ INSTALLED_APPS = [
     "core",
     "tree",
     "gallery",
-    "groups",
     "ingest",
     "search",
 ]
@@ -170,6 +166,9 @@ CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/
 CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
+
+LOGIN_REDIRECT_URL = '/'
+LOGIN_URL = '/login/'
 
 # Email — configure a real backend in production
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

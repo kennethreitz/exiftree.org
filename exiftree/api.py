@@ -10,8 +10,6 @@ from __future__ import annotations
 from typing import Annotated
 
 import msgspec
-from django.contrib.auth import authenticate
-from django.contrib.auth.hashers import make_password
 from django.db import models
 from django.db.models import Count
 from django.utils.text import slugify
@@ -30,7 +28,6 @@ from django_bolt import rate_limit
 
 from core.models import Camera, ExifData, Image, Lens, User
 from gallery.models import Collection, CollectionImage
-from groups.models import Group, GroupImage, GroupMembership
 from ingest.tasks import process_image_task
 
 # Rate limits (requests per second per IP)
@@ -50,12 +47,6 @@ class ErrorSchema(msgspec.Struct):
 
 
 # Auth
-class RegisterInput(msgspec.Struct):
-    username: str
-    email: str
-    password: str
-
-
 class LoginInput(msgspec.Struct):
     username: str
     password: str
@@ -145,6 +136,7 @@ class ImageListSchema(msgspec.Struct):
     slug: str
     user: str
     upload_date: str
+    visibility: str = 'public'
     thumbnail_small: str = ''
     thumbnail_medium: str = ''
     thumbnail_large: str = ''
@@ -195,32 +187,6 @@ class CollectionUpdateInput(msgspec.Struct):
     description: str | None = None
     visibility: str | None = None
     date: str | None = None
-
-
-# Groups
-class GroupSchema(msgspec.Struct):
-    id: str
-    name: str
-    slug: str
-    description: str
-    visibility: str
-    member_count: int = 0
-
-
-class GroupDetailSchema(msgspec.Struct):
-    id: str
-    name: str
-    slug: str
-    description: str
-    visibility: str
-    member_count: int = 0
-    members: list[MemberSchema] = []
-
-
-class MemberSchema(msgspec.Struct):
-    username: str
-    role: str
-    joined_at: str
 
 
 # Search
@@ -280,6 +246,7 @@ def _image_list_schema(img: Image) -> ImageListSchema:
         thumbnail_small=img.thumbnail_small.url if img.thumbnail_small else '',
         thumbnail_medium=img.thumbnail_medium.url if img.thumbnail_medium else '',
         thumbnail_large=img.thumbnail_large.url if img.thumbnail_large else '',
+        visibility=img.visibility,
         camera=camera, lens=lens, focal_length=focal_length,
         aperture=aperture, iso=iso,
     )
@@ -336,32 +303,13 @@ auth_router = Router(prefix="/api/auth", tags=["auth"])
 cameras_router = Router(prefix="/api/cameras", tags=["cameras"])
 lenses_router = Router(prefix="/api/lenses", tags=["lenses"])
 images_router = Router(prefix="/api/images", tags=["images"])
-users_router = Router(prefix="/api/users", tags=["users"])
 collections_router = Router(prefix="/api/collections", tags=["collections"])
-groups_router = Router(prefix="/api/groups", tags=["groups"])
 search_router = Router(prefix="/api/search", tags=["search"])
 
 
 # ---------------------------------------------------------------------------
 # Auth
 # ---------------------------------------------------------------------------
-
-@auth_router.post("/register")
-@rate_limit(rps=RATE_AUTH, key="ip")
-async def register(data: RegisterInput):
-    if await User.objects.filter(username=data.username).aexists():
-        return Response({"detail": "Username taken"}, status_code=409)
-    if await User.objects.filter(email=data.email).aexists():
-        return Response({"detail": "Email already registered"}, status_code=409)
-
-    user = await User.objects.acreate(
-        username=data.username,
-        email=data.email,
-        password=make_password(data.password),
-    )
-    token = create_jwt_for_user(user)
-    return TokenSchema(token=token)
-
 
 @auth_router.post("/login")
 @rate_limit(rps=RATE_AUTH, key="ip")
@@ -506,6 +454,22 @@ async def explore_images(limit: int = 48, year: int | None = None) -> list[Image
     return images
 
 
+@images_router.get("/manage", auth=[JWTAuthentication()], guards=[IsAuthenticated()])
+@rate_limit(rps=RATE_READ, key="ip")
+async def manage_images(request: Request) -> list[ImageListSchema]:
+    """All images for the authenticated user, including private/unlisted."""
+    images = []
+    qs = (
+        Image.objects.filter(user=request.user, is_processing=False)
+        .select_related('user', 'exif', 'exif__camera', 'exif__lens')
+        .order_by('-upload_date')
+    )
+    async for img in qs:
+        item = _image_list_schema(img)
+        images.append(item)
+    return images
+
+
 @images_router.get("/{image_id}")
 @rate_limit(rps=RATE_READ, key="ip")
 async def get_image(image_id: str):
@@ -629,50 +593,14 @@ async def delete_image(request: Request, image_id: str):
 
 
 # ---------------------------------------------------------------------------
-# Users (public profiles)
-# ---------------------------------------------------------------------------
-
-@users_router.get("")
-@rate_limit(rps=RATE_READ, key="ip")
-async def list_users(q: str = '') -> list[UserSchema]:
-    users = []
-    qs = User.objects.order_by('-created_at')
-    if q:
-        qs = qs.filter(username__icontains=q)
-    async for u in qs[:50]:
-        users.append(_user_schema(u))
-    return users
-
-
-@users_router.get("/{username}")
-@rate_limit(rps=RATE_READ, key="ip")
-async def get_user(username: str) -> UserSchema:
-    u = await User.objects.aget(username=username)
-    return _user_schema(u)
-
-
-@users_router.get("/{username}/images")
-@rate_limit(rps=RATE_READ, key="ip")
-async def user_images(username: str) -> list[ImageListSchema]:
-    images = []
-    qs = _public_images_qs().filter(
-        user__username=username,
-    ).order_by('-upload_date')[:50]
-    async for img in qs:
-        images.append(_image_list_schema(img))
-    return images
-
-
-# ---------------------------------------------------------------------------
 # Collections
 # ---------------------------------------------------------------------------
 
-@collections_router.get("/user/{username}")
+@collections_router.get("")
 @rate_limit(rps=RATE_READ, key="ip")
-async def user_collections(username: str) -> list[CollectionSchema]:
+async def list_collections() -> list[CollectionSchema]:
     collections = []
     qs = Collection.objects.filter(
-        user__username=username,
         visibility=Image.Visibility.PUBLIC,
     ).annotate(image_count=Count('collection_images')).order_by('-created_at')
     async for c in qs:
@@ -846,121 +774,6 @@ async def remove_image_from_collection(request: Request, collection_id: str, ima
 
 
 # ---------------------------------------------------------------------------
-# Groups
-# ---------------------------------------------------------------------------
-
-@groups_router.get("")
-@rate_limit(rps=RATE_READ, key="ip")
-async def list_groups() -> list[GroupSchema]:
-    groups = []
-    qs = (
-        Group.objects.filter(visibility=Group.Visibility.PUBLIC)
-        .annotate(member_count=Count('memberships'))
-        .order_by('-created_at')
-    )
-    async for g in qs:
-        groups.append(GroupSchema(
-            id=str(g.id), name=g.name, slug=g.slug,
-            description=g.description, visibility=g.visibility,
-            member_count=g.member_count,
-        ))
-    return groups
-
-
-@groups_router.get("/{slug}")
-@rate_limit(rps=RATE_READ, key="ip")
-async def get_group(slug: str) -> GroupDetailSchema:
-    g = await Group.objects.annotate(
-        member_count=Count('memberships')
-    ).aget(slug=slug)
-
-    members = []
-    async for m in g.memberships.select_related('user').order_by('role', 'joined_at'):
-        members.append(MemberSchema(
-            username=m.user.username, role=m.role,
-            joined_at=m.joined_at.isoformat(),
-        ))
-
-    return GroupDetailSchema(
-        id=str(g.id), name=g.name, slug=g.slug,
-        description=g.description, visibility=g.visibility,
-        member_count=g.member_count, members=members,
-    )
-
-
-@groups_router.get("/{slug}/images")
-@rate_limit(rps=RATE_READ, key="ip")
-async def group_images(slug: str) -> list[ImageListSchema]:
-    images = []
-    qs = _public_images_qs().filter(
-        group_entries__group__slug=slug,
-    ).order_by('-group_entries__submitted_at')[:50]
-    async for img in qs:
-        images.append(_image_list_schema(img))
-    return images
-
-
-@groups_router.post(
-    "/{slug}/join",
-    auth=[JWTAuthentication()],
-    guards=[IsAuthenticated()],
-)
-@rate_limit(rps=RATE_WRITE, key="ip")
-async def join_group(request: Request, slug: str):
-    g = await Group.objects.aget(slug=slug)
-    if g.visibility == Group.Visibility.PRIVATE:
-        return Response({"detail": "Private group"}, status_code=403)
-
-    if await GroupMembership.objects.filter(user=request.user, group=g).aexists():
-        return Response({"detail": "Already a member"}, status_code=409)
-
-    await GroupMembership.objects.acreate(
-        user=request.user, group=g, role=GroupMembership.Role.MEMBER,
-    )
-    return Response({}, status_code=201)
-
-
-@groups_router.post(
-    "/{slug}/leave",
-    auth=[JWTAuthentication()],
-    guards=[IsAuthenticated()],
-)
-@rate_limit(rps=RATE_WRITE, key="ip")
-async def leave_group(request: Request, slug: str):
-    deleted, _ = await GroupMembership.objects.filter(
-        user=request.user, group__slug=slug,
-    ).adelete()
-    if not deleted:
-        return Response({"detail": "Not a member"}, status_code=404)
-    return Response({}, status_code=204)
-
-
-@groups_router.post(
-    "/{slug}/images/{image_id}",
-    auth=[JWTAuthentication()],
-    guards=[IsAuthenticated()],
-)
-@rate_limit(rps=RATE_WRITE, key="ip")
-async def submit_image_to_group(request: Request, slug: str, image_id: str):
-    g = await Group.objects.aget(slug=slug)
-
-    # Must be a member
-    if not await GroupMembership.objects.filter(user=request.user, group=g).aexists():
-        return Response({"detail": "Not a member"}, status_code=403)
-
-    # Must own the image
-    img = await Image.objects.aget(id=image_id)
-    if str(img.user_id) != str(request.user.id):
-        return Response({"detail": "Not your image"}, status_code=403)
-
-    if await GroupImage.objects.filter(image=img, group=g).aexists():
-        return Response({"detail": "Image already in group"}, status_code=409)
-
-    await GroupImage.objects.acreate(image=img, group=g)
-    return Response({}, status_code=201)
-
-
-# ---------------------------------------------------------------------------
 # Search
 # ---------------------------------------------------------------------------
 
@@ -1057,9 +870,7 @@ api.include_router(auth_router)
 api.include_router(cameras_router)
 api.include_router(lenses_router)
 api.include_router(images_router)
-api.include_router(users_router)
 api.include_router(collections_router)
-api.include_router(groups_router)
 api.include_router(search_router)
 api.include_router(import_router)
 
