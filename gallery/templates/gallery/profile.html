@@ -1,39 +1,54 @@
 {% extends "base.html" %}
 {% block title %}@{{ profile_user.username }} — ExifTree{% endblock %}
 {% block content %}
-<div class="profile-header" x-data="{
-  user: null,
+<div x-data="{
+  user: null, images: [], collections: [],
   async init() {
-    const res = await fetch('/api/users/{{ profile_user.username }}');
-    this.user = await res.json();
+    const [uRes, iRes, cRes] = await Promise.all([
+      fetch('/api/users/{{ profile_user.username }}'),
+      fetch('/api/users/{{ profile_user.username }}/images'),
+      fetch('/api/collections/user/{{ profile_user.username }}'),
+    ]);
+    this.user = await uRes.json();
+    this.images = await iRes.json();
+    this.collections = await cRes.json();
   }
 }">
   <template x-if="user">
-    <div class="profile-header">
-      <img :src="user.avatar || ''" class="avatar" x-show="user.avatar">
-      <div>
-        <h1 x-text="'@' + user.username"></h1>
-        <p class="bio" x-text="user.bio" x-show="user.bio"></p>
-        <a :href="user.website" x-text="user.website" x-show="user.website" target="_blank"></a>
+    <div>
+      <div class="profile-header">
+        <img :src="user.avatar || ''" class="avatar" x-show="user.avatar">
+        <div>
+          <h1 x-text="'@' + user.username"></h1>
+          <p class="bio" x-text="user.bio" x-show="user.bio"></p>
+          <a :href="user.website" x-text="user.website" x-show="user.website" target="_blank"></a>
+        </div>
+      </div>
+
+      <!-- Sets -->
+      <div x-show="collections.length > 0" style="margin-bottom: 2rem;">
+        <h2 style="font-size: 1.25rem; margin-bottom: 1rem;">Sets</h2>
+        <div class="gear-grid">
+          <template x-for="c in collections" :key="c.id">
+            <a :href="'/@{{ profile_user.username }}/collections/' + c.slug + '/'" class="gear-card" style="color: inherit;">
+              <h3 x-text="c.title"></h3>
+              <span class="count" x-text="c.image_count + ' images'"></span>
+            </a>
+          </template>
+        </div>
+      </div>
+
+      <!-- Images -->
+      <h2 style="font-size: 1.25rem; margin-bottom: 1rem;">Images</h2>
+      <div class="image-grid">
+        <template x-for="img in images" :key="img.id">
+          <a :href="'/images/' + img.id + '/'" class="image-card">
+            <img :src="img.thumbnail_medium || img.thumbnail_small" :alt="img.title">
+          </a>
+        </template>
+        <div class="empty" x-show="images.length === 0">No images yet.</div>
       </div>
     </div>
   </template>
-</div>
-
-<div class="image-grid" x-data="{
-  images: [],
-  async init() {
-    const res = await fetch('/api/users/{{ profile_user.username }}/images');
-    this.images = await res.json();
-  }
-}">
-  <template x-for="img in images" :key="img.id">
-    <a :href="'/images/' + img.id + '/'" class="image-card">
-      <img :src="img.thumbnail_medium || img.thumbnail_small" :alt="img.title">
-      <div class="overlay">
-      </div>
-    </a>
-  </template>
-  <div class="empty" x-show="images.length === 0">No images yet.</div>
 </div>
 {% endblock %}

@@ -2,22 +2,24 @@
 {% block title %}Dashboard — ExifTree{% endblock %}
 {% block content %}
 <div x-data="{
-  user: null, images: [], editing: false,
-  bio: '', website: '',
+  user: null, images: [], collections: [],
+  editing: false, bio: '', website: '',
+  newSet: false, setTitle: '', setDesc: '',
+  addingTo: null,
   async load() {
     const token = localStorage.getItem('token');
     if (!token) { window.location.href = '/login/'; return; }
     const h = { 'Authorization': 'Bearer ' + token };
-    const [uRes, iRes] = await Promise.all([
-      fetch('/api/auth/me', { headers: h }),
-      fetch('/api/auth/me', { headers: h }).then(r => r.json()).then(u =>
-        fetch('/api/users/' + u.username + '/images')
-      ),
-    ]);
+    const uRes = await fetch('/api/auth/me', { headers: h });
     this.user = await uRes.json();
-    this.images = await iRes.json();
     this.bio = this.user.bio;
     this.website = this.user.website;
+    const [iRes, cRes] = await Promise.all([
+      fetch('/api/users/' + this.user.username + '/images'),
+      fetch('/api/collections/user/' + this.user.username),
+    ]);
+    this.images = await iRes.json();
+    this.collections = await cRes.json();
   },
   async saveProfile() {
     const token = localStorage.getItem('token');
@@ -36,6 +38,40 @@
       headers: { 'Authorization': 'Bearer ' + token },
     });
     this.images = this.images.filter(i => i.id !== id);
+  },
+  async createSet() {
+    if (!this.setTitle.trim()) return;
+    const token = localStorage.getItem('token');
+    const res = await fetch('/api/collections', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: this.setTitle, description: this.setDesc }),
+    });
+    if (res.ok) {
+      const c = await res.json();
+      this.collections.unshift(c);
+      this.setTitle = ''; this.setDesc = ''; this.newSet = false;
+    }
+  },
+  async deleteSet(id) {
+    if (!confirm('Delete this set?')) return;
+    const token = localStorage.getItem('token');
+    await fetch('/api/collections/' + id, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    this.collections = this.collections.filter(c => c.id !== id);
+  },
+  async addToSet(collectionId, imageId) {
+    const token = localStorage.getItem('token');
+    await fetch('/api/collections/' + collectionId + '/images/' + imageId, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    this.addingTo = null;
+    // Refresh collection counts
+    const cRes = await fetch('/api/collections/user/' + this.user.username);
+    this.collections = await cRes.json();
   }
 }" x-init="load()">
 
@@ -79,7 +115,40 @@
       <!-- Stats -->
       <div style="display: flex; gap: 2rem; margin-bottom: 2rem; font-size: 0.9rem; color: var(--text-muted);">
         <span x-text="user.image_count + ' images'"></span>
-        <span x-text="user.collection_count + ' collections'"></span>
+        <span x-text="collections.length + ' sets'"></span>
+      </div>
+
+      <!-- Sets / Collections -->
+      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1rem;">
+        <h2 style="font-size: 1.25rem;">Sets</h2>
+        <button class="btn" @click="newSet = !newSet" x-text="newSet ? 'Cancel' : 'New Set'"></button>
+      </div>
+
+      <!-- New Set Form -->
+      <div x-show="newSet" style="margin-bottom: 1.5rem; max-width: 500px;">
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <input type="text" x-model="setTitle" placeholder="Set title"
+            style="padding: 0.5rem 0.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text);">
+          <input type="text" x-model="setDesc" placeholder="Description (optional)"
+            style="padding: 0.5rem 0.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text);">
+          <button class="btn btn-primary" @click="createSet()" style="align-self: start;">Create</button>
+        </div>
+      </div>
+
+      <div class="gear-grid" style="margin-bottom: 3rem;">
+        <template x-for="c in collections" :key="c.id">
+          <div class="gear-card">
+            <a :href="'/@' + user.username + '/collections/' + c.slug + '/'" style="color: inherit;">
+              <h3 x-text="c.title"></h3>
+              <span class="count" x-text="c.image_count + ' images'"></span>
+            </a>
+            <button @click="deleteSet(c.id)"
+              style="margin-top: 0.5rem; background: none; border: none; color: #f44; cursor: pointer; font-size: 0.8rem; padding: 0;">
+              Delete set
+            </button>
+          </div>
+        </template>
+        <div class="empty" x-show="collections.length === 0" style="grid-column: 1 / -1;">No sets yet.</div>
       </div>
 
       <!-- Images -->
@@ -89,13 +158,25 @@
           <div class="image-card" style="position: relative;">
             <a :href="'/images/' + img.id + '/'">
               <img :src="img.thumbnail_medium || img.thumbnail_small" :alt="img.title">
-              <div class="overlay">
-              </div>
             </a>
-            <button @click="deleteImage(img.id)"
-              style="position: absolute; top: 0.5rem; right: 0.5rem; background: rgba(0,0,0,0.7); border: none; color: #f44; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: var(--radius); font-size: 0.8rem;">
-              Delete
-            </button>
+            <div style="position: absolute; top: 0.5rem; right: 0.5rem; display: flex; gap: 0.25rem;">
+              <div style="position: relative;" @click.outside="addingTo = (addingTo === img.id ? null : addingTo)">
+                <button @click="addingTo = (addingTo === img.id ? null : img.id)"
+                  style="background: rgba(0,0,0,0.7); border: none; color: var(--text); cursor: pointer; padding: 0.25rem 0.5rem; border-radius: var(--radius); font-size: 0.8rem;">
+                  + Set
+                </button>
+                <div x-show="addingTo === img.id" class="dropdown-menu" style="right: 0; top: 100%; min-width: 140px; margin-top: 0.25rem;">
+                  <template x-for="c in collections" :key="c.id">
+                    <a href="#" @click.prevent="addToSet(c.id, img.id)" x-text="c.title"></a>
+                  </template>
+                  <div x-show="collections.length === 0" style="padding: 0.5rem 1rem; color: var(--text-muted); font-size: 0.85rem;">Create a set first</div>
+                </div>
+              </div>
+              <button @click="deleteImage(img.id)"
+                style="background: rgba(0,0,0,0.7); border: none; color: #f44; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: var(--radius); font-size: 0.8rem;">
+                Delete
+              </button>
+            </div>
           </div>
         </template>
         <div class="empty" x-show="images.length === 0">
