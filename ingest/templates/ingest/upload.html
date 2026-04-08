@@ -8,7 +8,7 @@
   addFiles(fileList) {
     for (const f of fileList) {
       if (!f.type.startsWith('image/')) continue;
-      this.files.push({ file: f, name: f.name, status: 'pending', id: null, error: '' });
+      this.files.push({ file: f, name: f.name, size: f.size, status: 'pending', progress: 0, id: null, error: '' });
     }
     this.uploadAll();
   },
@@ -18,28 +18,47 @@
     for (const item of this.files) {
       if (item.status !== 'pending') continue;
       item.status = 'uploading';
+      await this.uploadOne(item, token);
+    }
+  },
+  uploadOne(item, token) {
+    return new Promise(resolve => {
+      const xhr = new XMLHttpRequest();
       const form = new FormData();
       form.append('image', item.file);
-      try {
-        const res = await fetch('/api/images/upload', {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + token },
-          body: form,
-        });
-        if (res.ok) {
-          const data = await res.json();
-          item.id = data.id;
+
+      xhr.upload.addEventListener('progress', e => {
+        if (e.lengthComputable) item.progress = Math.round((e.loaded / e.total) * 100);
+      });
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            item.id = data.id;
+          } catch(e) {}
           item.status = 'done';
+          item.progress = 100;
         } else {
-          const data = await res.json().catch(() => ({}));
-          item.error = data.detail || 'Upload failed';
+          try {
+            const data = JSON.parse(xhr.responseText);
+            item.error = data.detail || 'Upload failed';
+          } catch(e) { item.error = 'Upload failed'; }
           item.status = 'error';
         }
-      } catch(e) {
+        resolve();
+      });
+
+      xhr.addEventListener('error', () => {
         item.error = 'Upload failed';
         item.status = 'error';
-      }
-    }
+        resolve();
+      });
+
+      xhr.open('POST', '/api/images/upload');
+      xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+      xhr.send(form);
+    });
   }
 }"
   @dragover.prevent="dragover = true"
@@ -71,21 +90,30 @@
     <div class="upload-queue">
       <template x-for="(item, i) in files" :key="i">
         <div class="upload-item" :class="'upload-' + item.status">
-          <span class="upload-item-name" x-text="item.name"></span>
-          <span class="upload-item-status">
+          <div class="upload-item-info">
+            <span class="upload-item-name" x-text="item.name"></span>
+            <span class="upload-item-size" x-text="(item.size / 1024 / 1024).toFixed(1) + ' MB'"></span>
+          </div>
+          <div class="upload-item-right">
             <template x-if="item.status === 'pending'">
-              <span style="color: var(--text-muted);">Waiting...</span>
+              <span style="color: var(--text-muted);">Waiting</span>
             </template>
             <template x-if="item.status === 'uploading'">
-              <span style="color: var(--accent);">Uploading...</span>
+              <span style="color: var(--accent);" x-text="item.progress + '%'"></span>
             </template>
             <template x-if="item.status === 'done'">
-              <a :href="'/images/' + item.id + '/'" style="color: #4c4;">Done — view</a>
+              <a :href="'/images/' + item.id + '/'" style="color: #4c4;">View</a>
             </template>
             <template x-if="item.status === 'error'">
               <span style="color: #f44;" x-text="item.error"></span>
             </template>
-          </span>
+          </div>
+          <!-- Progress bar -->
+          <div class="upload-progress-track" x-show="item.status === 'uploading' || item.status === 'done'">
+            <div class="upload-progress-bar"
+                 :class="item.status === 'done' ? 'upload-progress-done' : ''"
+                 :style="'width: ' + item.progress + '%'"></div>
+          </div>
         </div>
       </template>
     </div>

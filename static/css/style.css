@@ -270,13 +270,26 @@ a:hover { color: var(--accent-hover); }
 
 .upload-queue { display: flex; flex-direction: column; gap: 0.5rem; }
 .upload-item {
-  display: flex; justify-content: space-between; align-items: center;
+  position: relative;
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
   padding: 0.75rem 1rem; background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); font-size: 0.9rem;
+  border-radius: var(--radius); font-size: 0.9rem; overflow: hidden;
 }
-.upload-item-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%; }
+.upload-item-info { display: flex; gap: 0.75rem; align-items: center; min-width: 0; flex: 1; }
+.upload-item-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.upload-item-size { color: var(--text-muted); font-size: 0.8rem; white-space: nowrap; }
+.upload-item-right { white-space: nowrap; font-size: 0.85rem; }
 .upload-done { border-color: #4c4; }
 .upload-error { border-color: #f44; }
+
+.upload-progress-track {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+  background: var(--border);
+}
+.upload-progress-bar {
+  height: 100%; background: var(--accent); transition: width 0.15s;
+}
+.upload-progress-done { background: #4c4; }
 
 /* Members list */
 .member-list { list-style: none; }
