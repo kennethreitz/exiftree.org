@@ -19,13 +19,13 @@
     this.$refs['card-' + this.selected]?.scrollIntoView({ block: 'nearest' });
   },
   open() {
-    if (this.selected >= 0) window.location.href = '/images/' + this.images[this.selected].id + '/';
+    if (this.selected >= 0) this.$dispatch('lightbox', { images: this.images, index: this.selected });
   }
 }" @keydown.right.window="nav(1)" @keydown.left.window="nav(-1)" @keydown.enter.window="open()">
   <div class="image-grid">
     <template x-for="(img, i) in images" :key="img.id">
       <div>
-        <a :href="'/images/' + img.id + '/'" class="image-card" :class="selected === i ? 'image-card-selected' : ''" :ref="'card-' + i" @mouseenter="selected = i">
+        <div class="image-card" :class="selected === i ? 'image-card-selected' : ''" :ref="'card-' + i" @mouseenter="selected = i" @click="$dispatch('lightbox', { images, index: i })" style="cursor: pointer;">
           <img :src="img.thumbnail_medium || img.thumbnail_small" :alt="img.title">
           <div class="overlay">
             <div class="exif-row">
@@ -37,7 +37,7 @@
               </div>
             </div>
           </div>
-        </a>
+        </div>
         <a :href="'/@' + img.user" class="image-card-user" x-text="'@' + img.user"></a>
       </div>
     </template>

@@ -79,9 +79,9 @@
       <!-- View mode: collection images -->
       <div x-show="!editing">
         <div class="image-grid">
-          <template x-for="img in col.images" :key="img.id">
+          <template x-for="(img, i) in col.images" :key="img.id">
             <div>
-              <a :href="'/images/' + img.id + '/'" class="image-card">
+              <div class="image-card" @click="$dispatch('lightbox', { images: col.images, index: i })" style="cursor: pointer;">
                 <img :src="img.thumbnail_medium || img.thumbnail_small" :alt="img.title">
                 <div class="overlay">
                   <div class="exif-row">
@@ -95,7 +95,7 @@
                     </div>
                   </div>
                 </div>
-              </a>
+              </div>
               <a :href="'/@' + img.user" class="image-card-user" x-text="'@' + img.user"></a>
             </div>
           </template>

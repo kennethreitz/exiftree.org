@@ -76,7 +76,7 @@
      @keydown.left.window="if (open) { $event.preventDefault(); prev(); }"
      @keydown.right.window="if (open) { $event.preventDefault(); next(); }"
      @click="close()"
-     class="lightbox" style="display: none;">
+     class="lightbox" x-cloak>
     <button class="lightbox-close" @click="close()">&times;</button>
     <button class="lightbox-nav lightbox-prev" @click.stop="prev()" x-show="idx > 0">&lsaquo;</button>
     <button class="lightbox-nav lightbox-next" @click.stop="next()" x-show="idx < images.length - 1">&rsaquo;</button>
