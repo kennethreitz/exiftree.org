@@ -88,6 +88,10 @@ class Image(models.Model):
         max_length=64, blank=True, db_index=True,
         help_text="SHA-256 hash of the original file for deduplication"
     )
+    perceptual_hash = models.CharField(
+        max_length=16, blank=True, db_index=True,
+        help_text="Perceptual hash for visual similarity detection"
+    )
     view_count = models.PositiveIntegerField(default=0)
     is_processing = models.BooleanField(default=True)
     upload_date = models.DateTimeField(auto_now_add=True, db_index=True)

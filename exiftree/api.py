@@ -462,10 +462,22 @@ async def upload_image(
 
     content_hash = hashlib.sha256(contents).hexdigest()
 
-    # Check for duplicate
+    # Check for exact duplicate
     existing = await Image.objects.filter(content_hash=content_hash).afirst()
     if existing:
         return Response({"detail": "Duplicate image", "id": str(existing.id)}, status_code=409)
+
+    # Check for perceptual duplicate
+    import imagehash
+    from PIL import Image as PILImage
+    from io import BytesIO
+    pil_img = PILImage.open(BytesIO(contents))
+    phash = str(imagehash.phash(pil_img))
+    pil_img.close()
+
+    existing = await Image.objects.filter(perceptual_hash=phash).afirst()
+    if existing:
+        return Response({"detail": "Visually similar image already exists", "id": str(existing.id)}, status_code=409)
 
     slug = slugify(title) if title else slugify(image.filename.rsplit('.', 1)[0])
 

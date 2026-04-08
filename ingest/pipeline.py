@@ -47,11 +47,15 @@ def process_image(image: Image) -> None:
     if exif['lens_model']:
         lens = get_or_create_lens(exif['lens_model'], exif['make'])
 
-    # 3. Generate thumbnails
+    # 3. Compute perceptual hash
+    file.seek(0)
+    compute_phash(image, file)
+
+    # 4. Generate thumbnails
     file.seek(0)
     generate_thumbnails(image, file)
 
-    # 4. Create ExifData
+    # 5. Create ExifData
     ExifData.objects.update_or_create(
         image=image,
         defaults={
@@ -68,9 +72,20 @@ def process_image(image: Image) -> None:
         },
     )
 
-    # 5. Mark as processed
+    # 6. Mark as processed
     image.is_processing = False
     image.save(update_fields=['is_processing', 'updated_at'])
+
+
+def compute_phash(image: Image, file) -> None:
+    """Compute perceptual hash for visual deduplication."""
+    import imagehash
+
+    file.seek(0)
+    with PILImage.open(file) as img:
+        phash = str(imagehash.phash(img))
+        image.perceptual_hash = phash
+        image.save(update_fields=['perceptual_hash'])
 
 
 def generate_thumbnails(image: Image, file) -> None:
