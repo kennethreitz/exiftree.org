@@ -3,16 +3,41 @@
 {% block content %}
 <div style="text-align: center; padding: 2rem 0 1.5rem;">
   <h1 style="font-size: 2.5rem; letter-spacing: -0.03em;">ExifTree</h1>
+  {% if SINGLE_TENANT %}
+  <div x-data="{
+    years: [],
+    selected: '',
+    async init() {
+      const res = await fetch('/api/images/years');
+      this.years = await res.json();
+    }
+  }" style="margin-top: 0.75rem;">
+    <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center;">
+      <button class="brand-pill" :class="!selected ? 'brand-pill-active' : ''"
+              @click="selected = ''; $dispatch('year-changed', { year: '' })">All</button>
+      <template x-for="y in years" :key="y">
+        <button class="brand-pill" :class="selected === y ? 'brand-pill-active' : ''"
+                @click="selected = y; $dispatch('year-changed', { year: y })" x-text="y"></button>
+      </template>
+    </div>
+  </div>
+  {% else %}
   <p style="color: var(--text-muted); font-size: 1.1rem; margin-top: 0.5rem;">Browse photography through the gear that made it.</p>
+  {% endif %}
 </div>
 
 <div x-data="{
   images: [],
+  year: '',
   async init() {
-    const res = await fetch('/api/images/explore?limit=48');
+    await this.load();
+  },
+  async load() {
+    const params = this.year ? '?limit=48&year=' + this.year : '?limit=48';
+    const res = await fetch('/api/images/explore' + params);
     this.images = await res.json();
   }
-}">
+}" @year-changed.window="year = $event.detail.year; load()">
   <div class="image-grid" style="grid-template-columns: repeat(4, 1fr);">
     <template x-for="(img, i) in images" :key="img.id">
       <div>
@@ -34,6 +59,6 @@
       </div>
     </template>
   </div>
-  <div class="empty" x-show="images.length === 0">No images yet. Be the first to <a href="/upload/">upload</a>.</div>
+  <div class="empty" x-show="images.length === 0">No images for this year.</div>
 </div>
 {% endblock %}

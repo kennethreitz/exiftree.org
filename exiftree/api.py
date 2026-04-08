@@ -472,11 +472,31 @@ async def lens_images(lens_id: str) -> list[ImageListSchema]:
 # Images
 # ---------------------------------------------------------------------------
 
+@images_router.get("/years")
+@rate_limit(rps=RATE_READ, key="ip")
+async def image_years() -> list[int]:
+    from django.db.models.functions import ExtractYear
+    years = []
+    qs = (
+        ExifData.objects.filter(date_taken__isnull=False)
+        .annotate(year=ExtractYear('date_taken'))
+        .values_list('year', flat=True)
+        .distinct()
+        .order_by('-year')
+    )
+    async for y in qs:
+        years.append(y)
+    return years
+
+
 @images_router.get("/explore")
 @rate_limit(rps=RATE_READ, key="ip")
-async def explore_images(limit: int = 48) -> list[ImageListSchema]:
+async def explore_images(limit: int = 48, year: int | None = None) -> list[ImageListSchema]:
     images = []
-    qs = _public_images_qs().order_by('?')[:limit]
+    qs = _public_images_qs()
+    if year:
+        qs = qs.filter(exif__date_taken__year=year)
+    qs = qs.order_by('?')[:limit]
     async for img in qs:
         images.append(_image_list_schema(img))
     return images
