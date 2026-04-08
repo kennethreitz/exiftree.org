@@ -19,13 +19,13 @@
     this.$refs['card-' + this.selected]?.scrollIntoView({ block: 'nearest' });
   },
   open() {
-    if (this.selected >= 0) this.$dispatch('lightbox', { images: this.images, index: this.selected });
+    if (this.selected >= 0) openLightbox(this.images, this.selected);
   }
 }" @keydown.right.window="nav(1)" @keydown.left.window="nav(-1)" @keydown.enter.window="open()">
   <div class="image-grid">
     <template x-for="(img, i) in images" :key="img.id">
       <div>
-        <div class="image-card" :class="selected === i ? 'image-card-selected' : ''" :ref="'card-' + i" @mouseenter="selected = i" @click="$dispatch('lightbox', { images, index: i })" style="cursor: pointer;">
+        <div class="image-card" :class="selected === i ? 'image-card-selected' : ''" :ref="'card-' + i" @mouseenter="selected = i" @click="openLightbox(images, i)" style="cursor: pointer;">
           <img :src="img.thumbnail_medium || img.thumbnail_small" :alt="img.title">
           <div class="overlay">
             <div class="exif-row">

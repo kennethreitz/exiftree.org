@@ -42,7 +42,7 @@
     <template x-for="(img, i) in images" :key="img.id">
       <div>
         <div class="image-card" style="cursor: pointer;"
-             @click="$dispatch('lightbox', { images, index: i })">
+             @click="openLightbox(images, i)">
           <img :src="img.thumbnail_medium || img.thumbnail_small" :alt="img.title">
           <div class="overlay">
             <div class="exif-row">

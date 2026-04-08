@@ -7,6 +7,11 @@
   <link rel="stylesheet" href="/static/css/style.css">
   <script src="https://unpkg.com/htmx.org@2.0.4"></script>
   <script defer src="https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js"></script>
+  <script>
+    window.openLightbox = function(images, index) {
+      window.dispatchEvent(new CustomEvent('lightbox', { detail: { images, index } }));
+    };
+  </script>
   {% block head %}{% endblock %}
 </head>
 <body>
@@ -77,6 +82,7 @@
     prev() { if (this.idx > 0) { this.idx--; this.cur = this.images[this.idx]; } },
     next() { if (this.idx < this.images.length - 1) { this.idx++; this.cur = this.images[this.idx]; } },
   }" x-show="open" x-transition.opacity
+     x-init="window._lightbox = $data"
      @lightbox.window="show($event.detail.images, $event.detail.index)"
      @keydown.escape.window="close()"
      @keydown.left.window="if (open) { $event.preventDefault(); prev(); }"
