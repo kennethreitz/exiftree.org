@@ -14,7 +14,7 @@
   }
 }">
   <template x-for="c in cameras" :key="c.id">
-    <a :href="'/cameras/' + c.slug.split('-').slice(0, c.manufacturer.split(' ').length).join('-') + '/'" class="gear-card" style="color: inherit;">
+    <a :href="'/cameras/' + c.slug + '/'" class="gear-card" style="color: inherit;">
       <h3 x-text="c.display_name"></h3>
       <span class="count" x-text="c.image_count + ' images'"></span>
     </a>

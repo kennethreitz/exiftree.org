@@ -24,7 +24,7 @@
     </div>
     <div class="gear-grid">
       <template x-for="c in cameras" :key="c.id">
-        <a :href="'/cameras/' + c.manufacturer.toLowerCase().replace(/\s+/g, '-') + '/'" class="gear-card" style="color: inherit;">
+        <a :href="'/cameras/' + c.slug + '/'" class="gear-card" style="color: inherit;">
           <h3 x-text="c.display_name"></h3>
           <span class="count" x-text="c.image_count + ' images'"></span>
         </a>
@@ -39,7 +39,7 @@
     </div>
     <div class="gear-grid">
       <template x-for="l in lenses" :key="l.id">
-        <a :href="'/lenses/' + l.manufacturer.toLowerCase().replace(/\s+/g, '-') + '/' + l.slug + '/'" class="gear-card" style="color: inherit;">
+        <a :href="'/lenses/' + l.slug + '/'" class="gear-card" style="color: inherit;">
           <h3 x-text="l.display_name"></h3>
           <span class="count" x-text="l.image_count + ' images'"></span>
         </a>

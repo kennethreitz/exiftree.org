@@ -53,12 +53,12 @@
         <div class="exif-bar">
           <div class="exif-item" x-show="img.exif.camera">
             <span class="exif-label">Camera</span>
-            <a :href="'/cameras/' + img.exif.camera?.slug?.split('-').slice(0,1).join('-') + '/' + img.exif.camera?.slug + '/'"
+            <a :href="'/cameras/' + img.exif.camera?.slug + '/'"
                x-text="img.exif.camera?.display_name"></a>
           </div>
           <div class="exif-item" x-show="img.exif.lens">
             <span class="exif-label">Lens</span>
-            <a :href="'/lenses/' + img.exif.lens?.slug?.split('-').slice(0, img.exif.lens?.manufacturer?.split(' ').length || 1).join('-') + '/' + img.exif.lens?.slug + '/'"
+            <a :href="'/lenses/' + img.exif.lens?.slug + '/'"
                x-text="img.exif.lens?.display_name"></a>
           </div>
           <div class="exif-item" x-show="img.exif.focal_length">
