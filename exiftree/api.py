@@ -118,6 +118,8 @@ class ExifSchema(msgspec.Struct):
     shutter_speed: str = ''
     iso: int | None = None
     date_taken: str | None = None
+    gps_latitude: float | None = None
+    gps_longitude: float | None = None
 
 
 class ImageSchema(msgspec.Struct):
@@ -295,6 +297,8 @@ def _image_schema(img: Image) -> ImageSchema:
             shutter_speed=exif.shutter_speed,
             iso=exif.iso,
             date_taken=exif.date_taken.isoformat() if exif.date_taken else None,
+            gps_latitude=float(exif.gps_latitude) if exif.gps_latitude else None,
+            gps_longitude=float(exif.gps_longitude) if exif.gps_longitude else None,
         )
     except ExifData.DoesNotExist:
         pass
