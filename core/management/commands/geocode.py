@@ -76,10 +76,10 @@ class Command(BaseCommand):
                 }
 
             # Skip invalid countries
-        if cc in ('CN', 'IN', 'JP', 'KG', 'MN', 'RU'):
-            continue
+            if cc in ('CN', 'IN', 'JP', 'KG', 'MN', 'RU'):
+                continue
 
-        assignments.append((exif.image_id, slug))
+            assignments.append((exif.image_id, slug))
 
         # Bulk create cities
         self.stdout.write(f"Creating {len(city_cache)} cities...")
