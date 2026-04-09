@@ -42,7 +42,7 @@ def camera_list(request):
     q = request.GET.get('q', '')
     cameras = Camera.objects.annotate(
         image_count=Count('images')
-    ).filter(image_count__gt=0).order_by('manufacturer', 'model')
+    ).filter(image_count__gte=5).order_by('manufacturer', 'model')
 
     brands = list(cameras.values_list('manufacturer', flat=True).distinct().order_by('manufacturer'))
 
@@ -84,7 +84,7 @@ def lens_list(request):
     q = request.GET.get('q', '')
     lenses = Lens.objects.annotate(
         image_count=Count('images')
-    ).filter(image_count__gt=0).order_by('manufacturer', 'model')
+    ).filter(image_count__gte=5).order_by('manufacturer', 'model')
 
     brands = list(lenses.values_list('manufacturer', flat=True).distinct().order_by('manufacturer'))
 
