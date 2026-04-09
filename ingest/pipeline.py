@@ -72,9 +72,21 @@ def process_image(image: Image) -> None:
         },
     )
 
-    # 6. Mark as processed
+    # 6. Reverse geocode to city
+    if exif['gps_latitude'] and exif['gps_longitude']:
+        try:
+            from core.models import City
+            city = City.from_coordinates(
+                float(exif['gps_latitude']), float(exif['gps_longitude'])
+            )
+            if city:
+                image.city = city
+        except Exception:
+            pass
+
+    # 7. Mark as processed
     image.is_processing = False
-    image.save(update_fields=['is_processing', 'updated_at'])
+    image.save(update_fields=['is_processing', 'city', 'updated_at'])
 
 
 def compute_phash(image: Image, file) -> None:

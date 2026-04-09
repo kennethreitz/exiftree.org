@@ -9,7 +9,7 @@ Usage:
 from django.core.management.base import BaseCommand
 from django.db.models import Q
 
-from core.models import ExifData, Image
+from core.models import City, ExifData, Image
 
 
 # ---------------------------------------------------------------------------
@@ -38,6 +38,12 @@ DELETE_RULES = [
 # ---------------------------------------------------------------------------
 # Fix rules — EXIF data matching these filters gets corrected
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# City rules — clear city for images in countries you've never visited
+# ---------------------------------------------------------------------------
+
+INVALID_COUNTRIES = ['CN', 'IN', 'KG', 'MN', 'RU']  # Bad GPS data — never visited
 
 FIX_RULES = [
     {
@@ -106,6 +112,20 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.SUCCESS(
                     f"  {rule['name']}: {count} fixed"
                 ))
+
+        # City cleanup
+        self.stdout.write("\nCity rules:")
+        for cc in INVALID_COUNTRIES:
+            images = Image.objects.filter(city__country_code=cc)
+            count = images.count()
+            if count == 0:
+                self.stdout.write(f"  Clear cities in {cc}: 0 matches")
+                continue
+            if dry_run:
+                self.stdout.write(self.style.WARNING(f"  Clear cities in {cc}: {count} would be cleared"))
+            else:
+                images.update(city=None)
+                self.stdout.write(self.style.SUCCESS(f"  Clear cities in {cc}: {count} cleared"))
 
         if dry_run:
             self.stdout.write(self.style.WARNING("\nDry run — nothing changed."))

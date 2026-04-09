@@ -212,10 +212,25 @@ class City(models.Model):
         continent_code = COUNTRY_TO_CONTINENT.get(cc, 'NA')
         continent = CONTINENT_MAP.get(continent_code, 'Unknown')
         country_name = COUNTRY_NAMES.get(cc, cc)
-        city_name = r['name']
         region = r.get('admin1', '')
 
-        slug = slugify(f"{city_name}-{cc}")
+        # For US, use name (city) not admin2 (county)
+        # For others, prefer admin2 (parent city) over name (suburb)
+        city_name = r['name']
+        admin2 = r.get('admin2', '')
+        if cc != 'US' and admin2 and admin2 != city_name:
+            city_name = admin2
+
+        # Clean up common prefixes
+        for prefix in ['City of ', 'Town of ', 'Village of ']:
+            if city_name.startswith(prefix):
+                city_name = city_name[len(prefix):]
+        # Strip " County" suffix for US
+        if cc == 'US' and city_name.endswith(' County'):
+            city_name = city_name[:-7]
+
+        slug = slugify(f"{city_name}-{region}-{cc}" if region else f"{city_name}-{cc}")
+
         city, _ = cls.objects.get_or_create(
             slug=slug,
             defaults={
@@ -229,6 +244,13 @@ class City(models.Model):
             },
         )
         return city
+
+    @property
+    def display_name(self) -> str:
+        """City, State for US; City for others."""
+        if self.country_code == 'US' and self.region:
+            return f"{self.name}, {self.region}"
+        return self.name
 
 
 class Tag(models.Model):

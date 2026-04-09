@@ -15,7 +15,7 @@
     <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--text-muted);">{{ country }}</h3>
     <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-left: 0.5rem;">
       {% for city in cities %}
-      <a href="/cities/{{ city.slug }}/" class="tag-pill">{{ city.name }}<span class="tag-count">{{ city.image_count }}</span></a>
+      <a href="/cities/{{ city.slug }}/" class="tag-pill">{{ city.display_name }}<span class="tag-count">{{ city.image_count }}</span></a>
       {% endfor %}
     </div>
   </div>
