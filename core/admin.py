@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from core.models import Camera, ExifData, Image, Lens, SiteConfig, Tag, User
+from core.models import Camera, City, ExifData, Image, Lens, SiteConfig, Tag, User
 
 
 @admin.register(SiteConfig)
@@ -17,6 +17,13 @@ class SiteConfigAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(City)
+class CityAdmin(admin.ModelAdmin):
+    list_display = ['name', 'country', 'continent']
+    list_filter = ['continent', 'country']
+    search_fields = ['name', 'country']
 
 
 @admin.register(Tag)

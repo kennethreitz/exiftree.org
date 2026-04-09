@@ -11,4 +11,6 @@ urlpatterns = [
     path('lenses/<slug:slug>/', views.lens_detail, name='lens-detail'),
     path('tags/', views.tag_cloud, name='tag-cloud'),
     path('tags/<slug:slug>/', views.tag_detail, name='tag-detail'),
+    path('cities/', views.city_list, name='city-list'),
+    path('cities/<slug:slug>/', views.city_detail, name='city-detail'),
 ]

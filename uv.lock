@@ -339,6 +339,7 @@ dependencies = [
     { name = "python-dotenv" },
     { name = "redis" },
     { name = "requests" },
+    { name = "reverse-geocoder" },
     { name = "sqlalchemy" },
 ]
 
@@ -359,6 +360,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.2.2" },
     { name = "redis", specifier = ">=7.4.0" },
     { name = "requests", specifier = ">=2.33.1" },
+    { name = "reverse-geocoder", specifier = ">=1.5.1" },
     { name = "sqlalchemy", specifier = ">=2.0.49" },
 ]
 
@@ -1058,6 +1060,16 @@ sdist = { url = "https://files.pythonhosted.org/packages/5f/a4/98b9c7c6428a668bf
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d7/8e/7540e8a2036f79a125c1d2ebadf69ed7901608859186c856fa0388ef4197/requests-2.33.1-py3-none-any.whl", hash = "sha256:4e6d1ef462f3626a1f0a0a9c42dd93c63bad33f9f1c1937509b8c5c8718ab56a", size = 64947, upload-time = "2026-03-30T16:09:13.83Z" },
 ]
+
+[[package]]
+name = "reverse-geocoder"
+version = "1.5.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/0b/0f/b7d5d4b36553731f11983e19e1813a1059ad0732c5162c01b3220c927d31/reverse_geocoder-1.5.1.tar.gz", hash = "sha256:2a2e781b5f69376d922b78fe8978f1350c84fce0ddb07e02c834ecf98b57c75c", size = 2246559, upload-time = "2016-09-15T16:46:46.277Z" }
 
 [[package]]
 name = "s3transfer"

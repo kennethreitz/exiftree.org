@@ -19,5 +19,6 @@ dependencies = [
     "python-dotenv>=1.2.2",
     "redis>=7.4.0",
     "requests>=2.33.1",
+    "reverse-geocoder>=1.5.1",
     "sqlalchemy>=2.0.49",
 ]

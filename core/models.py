@@ -105,6 +105,132 @@ class Lens(models.Model):
         return self.display_name
 
 
+CONTINENT_MAP = {
+    'AF': 'Africa', 'AN': 'Antarctica', 'AS': 'Asia', 'EU': 'Europe',
+    'NA': 'North America', 'OC': 'Oceania', 'SA': 'South America',
+}
+
+# Country code to continent code
+COUNTRY_TO_CONTINENT = {
+    'AD': 'EU', 'AE': 'AS', 'AF': 'AS', 'AG': 'NA', 'AI': 'NA', 'AL': 'EU', 'AM': 'AS',
+    'AO': 'AF', 'AR': 'SA', 'AS': 'OC', 'AT': 'EU', 'AU': 'OC', 'AW': 'NA', 'AZ': 'AS',
+    'BA': 'EU', 'BB': 'NA', 'BD': 'AS', 'BE': 'EU', 'BF': 'AF', 'BG': 'EU', 'BH': 'AS',
+    'BI': 'AF', 'BJ': 'AF', 'BM': 'NA', 'BN': 'AS', 'BO': 'SA', 'BR': 'SA', 'BS': 'NA',
+    'BT': 'AS', 'BW': 'AF', 'BY': 'EU', 'BZ': 'NA', 'CA': 'NA', 'CD': 'AF', 'CF': 'AF',
+    'CG': 'AF', 'CH': 'EU', 'CI': 'AF', 'CL': 'SA', 'CM': 'AF', 'CN': 'AS', 'CO': 'SA',
+    'CR': 'NA', 'CU': 'NA', 'CV': 'AF', 'CY': 'EU', 'CZ': 'EU', 'DE': 'EU', 'DJ': 'AF',
+    'DK': 'EU', 'DM': 'NA', 'DO': 'NA', 'DZ': 'AF', 'EC': 'SA', 'EE': 'EU', 'EG': 'AF',
+    'ER': 'AF', 'ES': 'EU', 'ET': 'AF', 'FI': 'EU', 'FJ': 'OC', 'FK': 'SA', 'FM': 'OC',
+    'FO': 'EU', 'FR': 'EU', 'GA': 'AF', 'GB': 'EU', 'GD': 'NA', 'GE': 'AS', 'GH': 'AF',
+    'GI': 'EU', 'GL': 'NA', 'GM': 'AF', 'GN': 'AF', 'GQ': 'AF', 'GR': 'EU', 'GT': 'NA',
+    'GU': 'OC', 'GW': 'AF', 'GY': 'SA', 'HK': 'AS', 'HN': 'NA', 'HR': 'EU', 'HT': 'NA',
+    'HU': 'EU', 'ID': 'AS', 'IE': 'EU', 'IL': 'AS', 'IN': 'AS', 'IQ': 'AS', 'IR': 'AS',
+    'IS': 'EU', 'IT': 'EU', 'JM': 'NA', 'JO': 'AS', 'JP': 'AS', 'KE': 'AF', 'KG': 'AS',
+    'KH': 'AS', 'KI': 'OC', 'KM': 'AF', 'KN': 'NA', 'KP': 'AS', 'KR': 'AS', 'KW': 'AS',
+    'KY': 'NA', 'KZ': 'AS', 'LA': 'AS', 'LB': 'AS', 'LC': 'NA', 'LI': 'EU', 'LK': 'AS',
+    'LR': 'AF', 'LS': 'AF', 'LT': 'EU', 'LU': 'EU', 'LV': 'EU', 'LY': 'AF', 'MA': 'AF',
+    'MC': 'EU', 'MD': 'EU', 'ME': 'EU', 'MG': 'AF', 'MH': 'OC', 'MK': 'EU', 'ML': 'AF',
+    'MM': 'AS', 'MN': 'AS', 'MO': 'AS', 'MP': 'OC', 'MR': 'AF', 'MT': 'EU', 'MU': 'AF',
+    'MV': 'AS', 'MW': 'AF', 'MX': 'NA', 'MY': 'AS', 'MZ': 'AF', 'NA': 'AF', 'NE': 'AF',
+    'NG': 'AF', 'NI': 'NA', 'NL': 'EU', 'NO': 'EU', 'NP': 'AS', 'NR': 'OC', 'NZ': 'OC',
+    'OM': 'AS', 'PA': 'NA', 'PE': 'SA', 'PG': 'OC', 'PH': 'AS', 'PK': 'AS', 'PL': 'EU',
+    'PR': 'NA', 'PS': 'AS', 'PT': 'EU', 'PW': 'OC', 'PY': 'SA', 'QA': 'AS', 'RO': 'EU',
+    'RS': 'EU', 'RU': 'EU', 'RW': 'AF', 'SA': 'AS', 'SB': 'OC', 'SC': 'AF', 'SD': 'AF',
+    'SE': 'EU', 'SG': 'AS', 'SI': 'EU', 'SK': 'EU', 'SL': 'AF', 'SM': 'EU', 'SN': 'AF',
+    'SO': 'AF', 'SR': 'SA', 'SS': 'AF', 'SV': 'NA', 'SY': 'AS', 'SZ': 'AF', 'TD': 'AF',
+    'TG': 'AF', 'TH': 'AS', 'TJ': 'AS', 'TL': 'AS', 'TM': 'AS', 'TN': 'AF', 'TO': 'OC',
+    'TR': 'AS', 'TT': 'NA', 'TV': 'OC', 'TW': 'AS', 'TZ': 'AF', 'UA': 'EU', 'UG': 'AF',
+    'US': 'NA', 'UY': 'SA', 'UZ': 'AS', 'VA': 'EU', 'VC': 'NA', 'VE': 'SA', 'VG': 'NA',
+    'VI': 'NA', 'VN': 'AS', 'VU': 'OC', 'WS': 'OC', 'YE': 'AS', 'ZA': 'AF', 'ZM': 'AF',
+    'ZW': 'AF',
+}
+
+# Country code to full name
+COUNTRY_NAMES = {
+    'AD': 'Andorra', 'AE': 'UAE', 'AF': 'Afghanistan', 'AG': 'Antigua and Barbuda',
+    'AL': 'Albania', 'AM': 'Armenia', 'AO': 'Angola', 'AR': 'Argentina', 'AT': 'Austria',
+    'AU': 'Australia', 'AZ': 'Azerbaijan', 'BA': 'Bosnia', 'BB': 'Barbados', 'BD': 'Bangladesh',
+    'BE': 'Belgium', 'BG': 'Bulgaria', 'BH': 'Bahrain', 'BR': 'Brazil', 'BS': 'Bahamas',
+    'BT': 'Bhutan', 'BW': 'Botswana', 'BY': 'Belarus', 'BZ': 'Belize', 'CA': 'Canada',
+    'CH': 'Switzerland', 'CL': 'Chile', 'CN': 'China', 'CO': 'Colombia', 'CR': 'Costa Rica',
+    'CU': 'Cuba', 'CY': 'Cyprus', 'CZ': 'Czechia', 'DE': 'Germany', 'DK': 'Denmark',
+    'DO': 'Dominican Republic', 'DZ': 'Algeria', 'EC': 'Ecuador', 'EE': 'Estonia', 'EG': 'Egypt',
+    'ES': 'Spain', 'ET': 'Ethiopia', 'FI': 'Finland', 'FJ': 'Fiji', 'FR': 'France',
+    'GB': 'United Kingdom', 'GE': 'Georgia', 'GH': 'Ghana', 'GR': 'Greece', 'GT': 'Guatemala',
+    'HK': 'Hong Kong', 'HN': 'Honduras', 'HR': 'Croatia', 'HT': 'Haiti', 'HU': 'Hungary',
+    'ID': 'Indonesia', 'IE': 'Ireland', 'IL': 'Israel', 'IN': 'India', 'IQ': 'Iraq',
+    'IR': 'Iran', 'IS': 'Iceland', 'IT': 'Italy', 'JM': 'Jamaica', 'JO': 'Jordan',
+    'JP': 'Japan', 'KE': 'Kenya', 'KH': 'Cambodia', 'KR': 'South Korea', 'KW': 'Kuwait',
+    'KZ': 'Kazakhstan', 'LA': 'Laos', 'LB': 'Lebanon', 'LK': 'Sri Lanka', 'LT': 'Lithuania',
+    'LU': 'Luxembourg', 'LV': 'Latvia', 'MA': 'Morocco', 'MC': 'Monaco', 'MD': 'Moldova',
+    'ME': 'Montenegro', 'MK': 'North Macedonia', 'MM': 'Myanmar', 'MN': 'Mongolia',
+    'MO': 'Macau', 'MT': 'Malta', 'MU': 'Mauritius', 'MV': 'Maldives', 'MX': 'Mexico',
+    'MY': 'Malaysia', 'MZ': 'Mozambique', 'NA': 'Namibia', 'NG': 'Nigeria', 'NI': 'Nicaragua',
+    'NL': 'Netherlands', 'NO': 'Norway', 'NP': 'Nepal', 'NZ': 'New Zealand', 'OM': 'Oman',
+    'PA': 'Panama', 'PE': 'Peru', 'PH': 'Philippines', 'PK': 'Pakistan', 'PL': 'Poland',
+    'PR': 'Puerto Rico', 'PT': 'Portugal', 'PY': 'Paraguay', 'QA': 'Qatar', 'RO': 'Romania',
+    'RS': 'Serbia', 'RU': 'Russia', 'RW': 'Rwanda', 'SA': 'Saudi Arabia', 'SE': 'Sweden',
+    'SG': 'Singapore', 'SI': 'Slovenia', 'SK': 'Slovakia', 'SN': 'Senegal', 'SO': 'Somalia',
+    'TH': 'Thailand', 'TN': 'Tunisia', 'TR': 'Turkey', 'TT': 'Trinidad and Tobago',
+    'TW': 'Taiwan', 'TZ': 'Tanzania', 'UA': 'Ukraine', 'UG': 'Uganda', 'US': 'United States',
+    'UY': 'Uruguay', 'UZ': 'Uzbekistan', 'VE': 'Venezuela', 'VN': 'Vietnam', 'ZA': 'South Africa',
+    'ZM': 'Zambia', 'ZW': 'Zimbabwe',
+}
+
+
+class City(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    region = models.CharField(max_length=255, blank=True, help_text="State/province/admin region")
+    country_code = models.CharField(max_length=2, db_index=True)
+    country = models.CharField(max_length=255)
+    continent = models.CharField(max_length=20, db_index=True)
+    slug = models.SlugField(max_length=255, unique=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = 'cities'
+        ordering = ['continent', 'country', 'name']
+
+    def __str__(self) -> str:
+        return f"{self.name}, {self.country}"
+
+    @classmethod
+    def from_coordinates(cls, lat: float, lon: float) -> 'City | None':
+        """Reverse geocode coordinates to a City, creating if needed."""
+        import reverse_geocoder as rg
+        from django.utils.text import slugify
+
+        results = rg.search([(lat, lon)])
+        if not results:
+            return None
+        r = results[0]
+
+        cc = r['cc']
+        continent_code = COUNTRY_TO_CONTINENT.get(cc, 'NA')
+        continent = CONTINENT_MAP.get(continent_code, 'Unknown')
+        country_name = COUNTRY_NAMES.get(cc, cc)
+        city_name = r['name']
+        region = r.get('admin1', '')
+
+        slug = slugify(f"{city_name}-{cc}")
+        city, _ = cls.objects.get_or_create(
+            slug=slug,
+            defaults={
+                'name': city_name,
+                'region': region,
+                'country_code': cc,
+                'country': country_name,
+                'continent': continent,
+                'latitude': float(r['lat']),
+                'longitude': float(r['lon']),
+            },
+        )
+        return city
+
+
 class Tag(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100, unique=True)
@@ -149,6 +275,9 @@ class Image(models.Model):
     perceptual_hash = models.CharField(
         max_length=16, blank=True, db_index=True,
         help_text="Perceptual hash for visual similarity detection"
+    )
+    city = models.ForeignKey(
+        City, on_delete=models.SET_NULL, null=True, blank=True, related_name='images',
     )
     tags = models.ManyToManyField(Tag, blank=True, related_name='images')
     view_count = models.PositiveIntegerField(default=0)

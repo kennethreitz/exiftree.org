@@ -1,7 +1,9 @@
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, render
 
-from core.models import Camera, Image, Lens, Tag
+from collections import OrderedDict
+
+from core.models import Camera, City, Image, Lens, Tag
 
 import random
 
@@ -148,6 +150,44 @@ def tag_detail(request, slug):
         })
     return render(request, 'tree/tag_detail.html', {
         'tag': tag, 'images': images, 'page': page, 'has_more': has_more,
+    })
+
+
+def city_list(request):
+    cities = (
+        City.objects.annotate(image_count=Count('images'))
+        .filter(image_count__gt=0)
+        .order_by('continent', 'country', 'name')
+    )
+
+    # Group by continent > country
+    grouped = OrderedDict()
+    for city in cities:
+        if city.continent not in grouped:
+            grouped[city.continent] = OrderedDict()
+        if city.country not in grouped[city.continent]:
+            grouped[city.continent][city.country] = []
+        grouped[city.continent][city.country].append(city)
+
+    return render(request, 'tree/city_list.html', {'grouped': grouped})
+
+
+def city_detail(request, slug):
+    city = get_object_or_404(City, slug=slug)
+    qs = (
+        Image.objects.filter(
+            city=city, visibility=Image.Visibility.PUBLIC, is_processing=False,
+        )
+        .select_related('user', 'exif', 'exif__camera', 'exif__lens')
+    )
+    images, page, has_more = _paginate_shuffled(request, qs)
+
+    if request.headers.get('HX-Request'):
+        return render(request, 'includes/image_grid_page.html', {
+            'images': images, 'page': page, 'has_more': has_more,
+        })
+    return render(request, 'tree/city_detail.html', {
+        'city': city, 'images': images, 'page': page, 'has_more': has_more,
     })
 
 
