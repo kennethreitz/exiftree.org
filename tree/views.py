@@ -3,15 +3,35 @@ from django.shortcuts import get_object_or_404, render
 
 from core.models import Camera, Image, Lens, Tag
 
+import random
+
 PAGE_SIZE = 48
 
 
-def _paginate(request, qs):
-    """Paginate a queryset and return (page_images, page, has_more)."""
+def _paginate_shuffled(request, qs):
+    """Paginate with a stable random shuffle per session."""
     page = int(request.GET.get('page', 1))
+
+    seed = request.session.get('shuffle_seed')
+    if not seed or request.GET.get('reshuffle'):
+        seed = random.randint(0, 2**31)
+        request.session['shuffle_seed'] = seed
+
+    all_ids = list(qs.values_list('id', flat=True))
+    rng = random.Random(seed)
+    rng.shuffle(all_ids)
+
     start = (page - 1) * PAGE_SIZE
-    images = list(qs[start:start + PAGE_SIZE])
-    has_more = len(images) == PAGE_SIZE and qs[start + PAGE_SIZE:start + PAGE_SIZE + 1].exists()
+    page_ids = all_ids[start:start + PAGE_SIZE]
+    has_more = start + PAGE_SIZE < len(all_ids)
+
+    images = list(
+        qs.model.objects.filter(id__in=page_ids)
+        .select_related('user', 'exif', 'exif__camera', 'exif__lens')
+    )
+    id_order = {uid: i for i, uid in enumerate(page_ids)}
+    images.sort(key=lambda img: id_order[img.id])
+
     return images, page, has_more
 
 
@@ -46,7 +66,7 @@ def camera_detail(request, slug):
         .select_related('user', 'exif', 'exif__camera', 'exif__lens')
         .order_by('-upload_date')
     )
-    images, page, has_more = _paginate(request, qs)
+    images, page, has_more = _paginate_shuffled(request, qs)
 
     if request.headers.get('HX-Request'):
         return render(request, 'includes/image_grid_page.html', {
@@ -120,7 +140,7 @@ def tag_detail(request, slug):
         .select_related('user', 'exif', 'exif__camera', 'exif__lens')
         .order_by('-upload_date')
     )
-    images, page, has_more = _paginate(request, qs)
+    images, page, has_more = _paginate_shuffled(request, qs)
 
     if request.headers.get('HX-Request'):
         return render(request, 'includes/image_grid_page.html', {
@@ -140,7 +160,7 @@ def lens_detail(request, slug):
         .select_related('user', 'exif', 'exif__camera', 'exif__lens')
         .order_by('-upload_date')
     )
-    images, page, has_more = _paginate(request, qs)
+    images, page, has_more = _paginate_shuffled(request, qs)
 
     if request.headers.get('HX-Request'):
         return render(request, 'includes/image_grid_page.html', {
