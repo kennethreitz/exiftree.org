@@ -105,7 +105,9 @@ def _get_date_taken(tags: dict) -> datetime | None:
         val = tags.get(key)
         if val:
             try:
-                return datetime.strptime(str(val).strip(), '%Y:%m:%d %H:%M:%S')
+                from django.utils import timezone
+                dt = datetime.strptime(str(val).strip(), '%Y:%m:%d %H:%M:%S')
+                return timezone.make_aware(dt)
             except ValueError:
                 continue
     return None

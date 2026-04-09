@@ -86,46 +86,49 @@ def generate_ai_description_task(self, image_id: str) -> None:
         import openai
         client = openai.OpenAI(api_key=config.openai_api_key)
 
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": config.ai_prompt},
-                        {"type": "image_url", "image_url": {"url": thumb.url}},
-                    ],
-                }
-            ],
-            response_format={
-                "type": "json_schema",
-                "json_schema": {
-                    "name": "image_metadata",
-                    "strict": True,
-                    "schema": {
-                        "type": "object",
-                        "properties": {
-                            "title": {
-                                "type": "string",
-                                "description": "Short, evocative artistic title (3-7 words)",
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": config.ai_prompt},
+                            {"type": "image_url", "image_url": {"url": thumb.url}},
+                        ],
+                    }
+                ],
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "image_metadata",
+                        "strict": True,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "title": {
+                                    "type": "string",
+                                    "description": "Short, evocative artistic title (3-7 words)",
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "2-3 sentence description of the photograph",
+                                },
+                                "tags": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                    "description": "5-10 single-word lowercase tags",
+                                },
                             },
-                            "description": {
-                                "type": "string",
-                                "description": "2-3 sentence description of the photograph",
-                            },
-                            "tags": {
-                                "type": "array",
-                                "items": {"type": "string"},
-                                "description": "5-10 single-word lowercase tags",
-                            },
+                            "required": ["title", "description", "tags"],
+                            "additionalProperties": False,
                         },
-                        "required": ["title", "description", "tags"],
-                        "additionalProperties": False,
                     },
                 },
-            },
-            max_tokens=400,
-        )
+                max_tokens=400,
+            )
+        finally:
+            client.close()
 
         data = json.loads(response.choices[0].message.content)
 

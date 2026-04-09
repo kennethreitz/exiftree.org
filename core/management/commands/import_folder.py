@@ -43,8 +43,16 @@ class Command(BaseCommand):
             help="Visibility for imported images (default: public)",
         )
         parser.add_argument(
-            '--workers', type=int, default=4,
-            help="Number of concurrent upload workers (default: 4)",
+            '--skip', type=int, default=0,
+            help="Skip the first N images",
+        )
+        parser.add_argument(
+            '--workers', type=int, default=1,
+            help="Number of concurrent upload workers (default: 1)",
+        )
+        parser.add_argument(
+            '--no-auto', action='store_true',
+            help="Disable auto-seek past duplicates",
         )
         parser.add_argument(
             '--dry-run', action='store_true',
@@ -81,6 +89,30 @@ class Command(BaseCommand):
         if not files:
             self.stderr.write(self.style.WARNING(f"No images found in {folder}"))
             return
+
+        if options['skip']:
+            files = files[options['skip']:]
+
+        if not options['no_auto']:
+            self.stdout.write(f"Auto-seeking past duplicates in {len(files)} images...")
+            # Binary search for the first non-duplicate
+            lo, hi = 0, len(files) - 1
+            first_new = len(files)  # default: all are dupes
+
+            while lo <= hi:
+                mid = (lo + hi) // 2
+                content_hash = hashlib.sha256(files[mid].read_bytes()).hexdigest()
+                is_dupe = Image.objects.filter(content_hash=content_hash).exists()
+                if is_dupe:
+                    lo = mid + 1
+                else:
+                    first_new = mid
+                    hi = mid - 1
+
+            # Scan back a bit to catch any gaps
+            start = max(0, first_new - 10)
+            files = files[start:]
+            self.stdout.write(f"  Skipped {start} duplicates, starting at position {start}")
 
         self.stdout.write(f"Found {len(files)} images")
 
@@ -120,6 +152,8 @@ class Command(BaseCommand):
 
         def import_one(i: int, filepath: Path) -> tuple[str, str]:
             """Returns (status, filename). status is 'ok', 'skip', or 'error'."""
+            from django.db import connection
+            connection.close()
             try:
                 contents = filepath.read_bytes()
                 content_hash = hashlib.sha256(contents).hexdigest()

@@ -3,6 +3,17 @@ from django.shortcuts import get_object_or_404, render
 
 from core.models import Camera, Image, Lens, Tag
 
+PAGE_SIZE = 48
+
+
+def _paginate(request, qs):
+    """Paginate a queryset and return (page_images, page, has_more)."""
+    page = int(request.GET.get('page', 1))
+    start = (page - 1) * PAGE_SIZE
+    images = list(qs[start:start + PAGE_SIZE])
+    has_more = len(images) == PAGE_SIZE and qs[start + PAGE_SIZE:start + PAGE_SIZE + 1].exists()
+    return images, page, has_more
+
 
 def camera_list(request):
     brand = request.GET.get('brand', '')
@@ -28,14 +39,22 @@ def camera_list(request):
 
 def camera_detail(request, slug):
     camera = get_object_or_404(Camera, slug=slug)
-    images = (
+    qs = (
         Image.objects.filter(
             exif__camera=camera, visibility=Image.Visibility.PUBLIC, is_processing=False,
         )
         .select_related('user', 'exif', 'exif__camera', 'exif__lens')
-        .order_by('-upload_date')[:50]
+        .order_by('-upload_date')
     )
-    return render(request, 'tree/camera_detail.html', {'camera': camera, 'images': images})
+    images, page, has_more = _paginate(request, qs)
+
+    if request.headers.get('HX-Request'):
+        return render(request, 'includes/image_grid_page.html', {
+            'images': images, 'page': page, 'has_more': has_more,
+        })
+    return render(request, 'tree/camera_detail.html', {
+        'camera': camera, 'images': images, 'page': page, 'has_more': has_more,
+    })
 
 
 def lens_list(request):
@@ -94,23 +113,39 @@ def tag_cloud(request):
 
 def tag_detail(request, slug):
     tag = get_object_or_404(Tag, slug=slug)
-    images = (
+    qs = (
         Image.objects.filter(
             tags=tag, visibility=Image.Visibility.PUBLIC, is_processing=False,
         )
         .select_related('user', 'exif', 'exif__camera', 'exif__lens')
-        .order_by('-upload_date')[:50]
+        .order_by('-upload_date')
     )
-    return render(request, 'tree/tag_detail.html', {'tag': tag, 'images': images})
+    images, page, has_more = _paginate(request, qs)
+
+    if request.headers.get('HX-Request'):
+        return render(request, 'includes/image_grid_page.html', {
+            'images': images, 'page': page, 'has_more': has_more,
+        })
+    return render(request, 'tree/tag_detail.html', {
+        'tag': tag, 'images': images, 'page': page, 'has_more': has_more,
+    })
 
 
 def lens_detail(request, slug):
     lens = get_object_or_404(Lens, slug=slug)
-    images = (
+    qs = (
         Image.objects.filter(
             exif__lens=lens, visibility=Image.Visibility.PUBLIC, is_processing=False,
         )
         .select_related('user', 'exif', 'exif__camera', 'exif__lens')
-        .order_by('-upload_date')[:50]
+        .order_by('-upload_date')
     )
-    return render(request, 'tree/lens_detail.html', {'lens': lens, 'images': images})
+    images, page, has_more = _paginate(request, qs)
+
+    if request.headers.get('HX-Request'):
+        return render(request, 'includes/image_grid_page.html', {
+            'images': images, 'page': page, 'has_more': has_more,
+        })
+    return render(request, 'tree/lens_detail.html', {
+        'lens': lens, 'images': images, 'page': page, 'has_more': has_more,
+    })

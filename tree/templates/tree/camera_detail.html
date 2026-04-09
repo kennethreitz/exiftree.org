@@ -6,18 +6,7 @@
   <p>{{ camera.manufacturer }}</p>
 </div>
 
-<div class="image-grid">
-  {% for img in images %}
-  <div>
-    <a href="/images/{{ img.id }}/" class="image-card">
-      {% if img.thumbnail_medium %}<img src="{{ img.thumbnail_medium.url }}" alt="{{ img.title }}">
-      {% elif img.thumbnail_small %}<img src="{{ img.thumbnail_small.url }}" alt="{{ img.title }}">{% endif %}
-      {% include "includes/image_overlay.html" %}
-    </a>
-  </div>
-  {% empty %}
-  <div class="empty" style="grid-column: 1 / -1;">No images yet for this camera.</div>
-  {% endfor %}
+<div class="image-grid" style="grid-template-columns: repeat(4, 1fr);">
+  {% include "includes/image_grid_page.html" %}
 </div>
-{% include "includes/grid_keynav.html" %}
 {% endblock %}

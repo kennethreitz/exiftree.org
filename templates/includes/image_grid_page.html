@@ -8,7 +8,7 @@
 </div>
 {% endfor %}
 {% if has_more %}
-<div hx-get="/?page={{ page|add:1 }}{% if selected_year %}&year={{ selected_year }}{% endif %}"
+<div hx-get="{{ request.path }}?page={{ page|add:1 }}{% if selected_year %}&year={{ selected_year }}{% endif %}"
      hx-trigger="revealed"
      hx-swap="outerHTML"
      style="grid-column: 1 / -1; text-align: center; padding: 2rem;">

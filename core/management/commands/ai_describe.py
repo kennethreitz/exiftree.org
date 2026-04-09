@@ -24,7 +24,7 @@ class Command(BaseCommand):
             help="Max images to process (0 = all)",
         )
         parser.add_argument(
-            '--workers', type=int, default=4,
+            '--workers', type=int, default=2,
             help="Number of concurrent workers (default: 4)",
         )
         parser.add_argument(
@@ -73,8 +73,16 @@ class Command(BaseCommand):
         done = 0
         errors = 0
 
+        # Prevent "too many open files"
+        import resource
+        soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+        resource.setrlimit(resource.RLIMIT_NOFILE, (min(hard, 8192), hard))
+
         def describe_one(img):
+            from django.db import connection
+            connection.close()
             generate_ai_description_task(str(img.id))
+            connection.close()
             img.refresh_from_db()
             return img
 

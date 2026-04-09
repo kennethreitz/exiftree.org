@@ -9,17 +9,21 @@ Usage:
 from django.core.management.base import BaseCommand
 from django.db.models import Q
 
-from core.models import Image
+from core.models import ExifData, Image
 
 
 # ---------------------------------------------------------------------------
-# Cleanup rules — add new rules here
+# Delete rules — images matching these filters get deleted
 # ---------------------------------------------------------------------------
 
-RULES = [
+DELETE_RULES = [
     {
         'name': "All photos from 2008",
         'filter': Q(exif__date_taken__year=2008),
+    },
+    {
+        'name': "All photos from 2020",
+        'filter': Q(exif__date_taken__year=2020),
     },
     {
         'name': "Photos from Dec 26, 2014",
@@ -27,21 +31,39 @@ RULES = [
     },
 ]
 
+# ---------------------------------------------------------------------------
+# Fix rules — EXIF data matching these filters gets corrected
+# ---------------------------------------------------------------------------
+
+FIX_RULES = [
+    {
+        'name': "Clear incorrect dates before 2008",
+        'filter': Q(date_taken__year__lt=2008),
+        'update': {'date_taken': None},
+    },
+    {
+        'name': "Clear incorrect dates 2021+",
+        'filter': Q(date_taken__year__gte=2021),
+        'update': {'date_taken': None},
+    },
+]
+
 
 class Command(BaseCommand):
-    help = "Delete photos matching cleanup rules"
+    help = "Delete or fix photos matching cleanup rules"
 
     def add_arguments(self, parser):
         parser.add_argument(
             '--dry-run', action='store_true',
-            help="Show what would be deleted without deleting",
+            help="Show what would change without changing",
         )
 
     def handle(self, *args, **options):
         dry_run = options['dry_run']
-        total_deleted = 0
 
-        for rule in RULES:
+        self.stdout.write("Delete rules:")
+        total_deleted = 0
+        for rule in DELETE_RULES:
             qs = Image.objects.filter(rule['filter'])
             count = qs.count()
 
@@ -54,13 +76,36 @@ class Command(BaseCommand):
                     f"  {rule['name']}: {count} would be deleted"
                 ))
             else:
-                deleted, _ = qs.delete()
+                qs.delete()
                 total_deleted += count
                 self.stdout.write(self.style.SUCCESS(
                     f"  {rule['name']}: {count} deleted"
                 ))
 
+        self.stdout.write("\nFix rules:")
+        total_fixed = 0
+        for rule in FIX_RULES:
+            qs = ExifData.objects.filter(rule['filter'])
+            count = qs.count()
+
+            if count == 0:
+                self.stdout.write(f"  {rule['name']}: 0 matches")
+                continue
+
+            if dry_run:
+                self.stdout.write(self.style.WARNING(
+                    f"  {rule['name']}: {count} would be fixed"
+                ))
+            else:
+                qs.update(**rule['update'])
+                total_fixed += count
+                self.stdout.write(self.style.SUCCESS(
+                    f"  {rule['name']}: {count} fixed"
+                ))
+
         if dry_run:
-            self.stdout.write(self.style.WARNING("\nDry run — nothing deleted."))
+            self.stdout.write(self.style.WARNING("\nDry run — nothing changed."))
         else:
-            self.stdout.write(self.style.SUCCESS(f"\nDone: {total_deleted} images deleted."))
+            self.stdout.write(self.style.SUCCESS(
+                f"\nDone: {total_deleted} deleted, {total_fixed} fixed."
+            ))
