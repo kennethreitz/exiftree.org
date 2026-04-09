@@ -132,7 +132,7 @@ def oembed(request):
             if thumb:
                 grid_html += _oembed_grid_item(img, thumb)
         grid_html += '</div>'
-        grid_html += f'<p style="text-align:center;margin-top:8px;"><a href="https://photos.kennethreitz.org/collections/{col.slug}/" style="color:#888;">See more at photos.kennethreitz.org.</a></p></div>'
+        grid_html += f'<p style="text-align:center !important;margin-top:8px;display:block;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;"><a href="https://photos.kennethreitz.org/collections/{col.slug}/" style="color:#888;">See more at photos.kennethreitz.org.</a></p></div>'
 
         return JsonResponse({
             'version': '1.0',
@@ -180,7 +180,7 @@ def oembed(request):
             if thumb:
                 grid_html += _oembed_grid_item(img, thumb)
         grid_html += '</div>'
-        grid_html += f'<p style="text-align:center;margin-top:8px;"><a href="https://photos.kennethreitz.org" style="color:#888;">See more at photos.kennethreitz.org.</a></p></div>'
+        grid_html += f'<p style="text-align:center !important;margin-top:8px;display:block;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;"><a href="https://photos.kennethreitz.org" style="color:#888;">See more at photos.kennethreitz.org.</a></p></div>'
 
         return JsonResponse({
             'version': '1.0',
