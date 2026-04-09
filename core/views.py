@@ -228,7 +228,7 @@ def oembed(request):
     }
 
     # Add rich HTML for consumers that support it
-    html_parts = [f'<div style="max-width:800px;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;"><img src="{thumb.url}" alt="{title}" style="max-width:100%;border-radius:4px;">']
+    html_parts = [f'<div style="max-width:800px;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;"><a href="https://photos.kennethreitz.org/images/{image.id}/" target="_blank"><img src="{thumb.url}" alt="{title}" style="max-width:100%;border-radius:4px;"></a>']
     if exif_line:
         html_parts.append(f'<p style="color:#888;font-size:0.85em;">{exif_line}</p>')
     html_parts.append('</div>')
