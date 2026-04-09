@@ -218,6 +218,11 @@ LOGGING = {
             'level': 'WARNING',
             'propagate': False,
         },
+        'httpx': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
         'ingest': {
             'handlers': ['console'],
             'level': 'INFO',
