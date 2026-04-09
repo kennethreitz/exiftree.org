@@ -1,8 +1,8 @@
 {% for img in images %}
 <div>
   <a href="/images/{{ img.id }}/" class="image-card">
-    {% if img.thumbnail_medium %}<img src="{{ img.thumbnail_medium.url }}" alt="{{ img.title }}" loading="lazy">
-    {% elif img.thumbnail_small %}<img src="{{ img.thumbnail_small.url }}" alt="{{ img.title }}" loading="lazy">{% endif %}
+    {% if img.thumbnail_medium %}<img src="{{ img.thumbnail_medium.url }}" alt="{{ img.ai_title|default:img.title }}" loading="lazy">
+    {% elif img.thumbnail_small %}<img src="{{ img.thumbnail_small.url }}" alt="{{ img.ai_title|default:img.title }}" loading="lazy">{% endif %}
     {% include "includes/image_overlay.html" %}
   </a>
 </div>

@@ -44,7 +44,7 @@ class StaticSitemap(Sitemap):
     priority = 1.0
 
     def items(self):
-        return ['/', '/cameras/', '/lenses/', '/tags/', '/cities/', '/search/']
+        return ['/', '/cameras/', '/lenses/', '/tags/', '/cities/', '/years/', '/search/']
 
     def location(self, item):
         return item
@@ -100,6 +100,25 @@ class CitySitemap(Sitemap):
         return f'/cities/{obj.slug}/'
 
 
+class YearSitemap(Sitemap):
+    changefreq = 'monthly'
+    priority = 0.7
+
+    def items(self):
+        from core.models import ExifData
+        from django.db.models.functions import ExtractYear
+        return (
+            ExifData.objects.filter(date_taken__isnull=False)
+            .annotate(year=ExtractYear('date_taken'))
+            .values_list('year', flat=True)
+            .distinct()
+            .order_by('-year')
+        )
+
+    def location(self, year):
+        return f'/years/{year}/'
+
+
 sitemaps = {
     'static': StaticSitemap,
     'images': ImageSitemap,
@@ -107,6 +126,7 @@ sitemaps = {
     'lenses': LensSitemap,
     'tags': TagSitemap,
     'cities': CitySitemap,
+    'years': YearSitemap,
 }
 
 urlpatterns = [
