@@ -158,13 +158,28 @@ def oembed(request):
         if not photos:
             return JsonResponse({'error': 'No photos'}, status=404)
 
-        grid_html = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;max-width:800px;">'
+        # Year pills
+        years = list(
+            ExifData.objects.filter(date_taken__isnull=False)
+            .annotate(year=ExtractYear('date_taken'))
+            .values_list('year', flat=True)
+            .distinct()
+            .order_by('-year')
+        )
+        grid_html = '<div style="max-width:800px;">'
+        if years:
+            grid_html += '<div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-bottom:8px;">'
+            grid_html += f'<a href="https://photos.kennethreitz.org" target="_blank" style="padding:2px 8px;border-radius:999px;font-size:0.75em;background:#222;color:#e8a820;text-decoration:none;border:1px solid #333;">All</a>'
+            for y in years:
+                grid_html += f'<a href="https://photos.kennethreitz.org/?year={y}" target="_blank" style="padding:2px 8px;border-radius:999px;font-size:0.75em;background:#222;color:#ccc;text-decoration:none;border:1px solid #333;">{y}</a>'
+            grid_html += '</div>'
+        grid_html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">'
         for img in photos:
             thumb = img.thumbnail_small or img.thumbnail_medium
             if thumb:
                 grid_html += _oembed_grid_item(img, thumb)
         grid_html += '</div>'
-        grid_html += f'<p style="text-align:center;margin-top:8px;"><a href="https://photos.kennethreitz.org" style="color:#888;">See more at photos.kennethreitz.org.</a></p>'
+        grid_html += f'<p style="text-align:center;margin-top:8px;"><a href="https://photos.kennethreitz.org" style="color:#888;">See more at photos.kennethreitz.org.</a></p></div>'
 
         return JsonResponse({
             'version': '1.0',
