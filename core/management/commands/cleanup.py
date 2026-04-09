@@ -47,7 +47,8 @@ DELETE_RULES = [
 # City rules — clear city for images in countries you've never visited
 # ---------------------------------------------------------------------------
 
-INVALID_COUNTRIES = ['CN', 'IN', 'JP', 'KG', 'MN', 'RU']  # Bad GPS data — never visited
+INVALID_COUNTRIES = ['CN', 'JP', 'KG', 'MN', 'RU']  # Bad GPS data — never visited
+ALLOWED_CITIES = {'Bangalore', 'Mysore', 'Bengaluru', 'Mysuru'}  # Valid Indian cities
 
 FIX_RULES = [
     {
@@ -119,6 +120,19 @@ class Command(BaseCommand):
 
         # City cleanup
         self.stdout.write("\nCity rules:")
+
+        # India: clear non-Bangalore/Mysore cities
+        in_images = Image.objects.filter(city__country_code='IN').exclude(city__name__in=ALLOWED_CITIES)
+        in_count = in_images.count()
+        if in_count:
+            if dry_run:
+                self.stdout.write(self.style.WARNING(f"  Clear non-allowed IN cities: {in_count} would be cleared"))
+            else:
+                in_images.update(city=None)
+                self.stdout.write(self.style.SUCCESS(f"  Clear non-allowed IN cities: {in_count} cleared"))
+        else:
+            self.stdout.write(f"  Clear non-allowed IN cities: 0 matches")
+
         for cc in INVALID_COUNTRIES:
             images = Image.objects.filter(city__country_code=cc)
             count = images.count()
