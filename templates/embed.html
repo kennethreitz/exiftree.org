@@ -42,7 +42,7 @@
     var year = '{{ year|default:"" }}';
     var offset = 0;
     var loading = false;
-    var BATCH = 48;
+    var BATCH = 12;
 
     fetch('/api/images/years').then(r => r.json()).then(function(years) {
       var pills = document.getElementById('pills');
