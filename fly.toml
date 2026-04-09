@@ -30,6 +30,13 @@ primary_region = 'iad'
     port = 443
     handlers = ["tls", "http"]
 
+  [[services.http_checks]]
+    interval = 10000
+    grace_period = "5s"
+    method = "GET"
+    path = "/"
+    timeout = 2000
+
 [env]
   DJANGO_SETTINGS_MODULE = 'exiftree.settings'
   DEBUG = '0'
