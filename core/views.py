@@ -69,6 +69,36 @@ def home(request):
     })
 
 
+def _oembed_grid_item(img, thumb):
+    """Build an oEmbed grid item with EXIF overlay."""
+    overlay = ''
+    try:
+        exif = img.exif
+        parts = []
+        if exif.camera:
+            parts.append(exif.camera.display_name)
+        if exif.focal_length:
+            parts.append(f'{exif.focal_length}mm')
+        if exif.aperture:
+            parts.append(f'f/{exif.aperture}')
+        if parts:
+            overlay = (
+                f'<div style="position:absolute;bottom:0;left:0;right:0;padding:4px 6px;'
+                f'background:linear-gradient(transparent,rgba(0,0,0,0.8));'
+                f'color:rgba(255,255,255,0.75);font-size:0.6em;line-height:1.3;">'
+                f'{"<br>".join(parts)}</div>'
+            )
+    except Exception:
+        pass
+
+    return (
+        f'<a href="https://photos.kennethreitz.org/images/{img.id}/" '
+        f'style="display:block;position:relative;aspect-ratio:1;overflow:hidden;border-radius:4px;">'
+        f'<img src="{thumb.url}" style="width:100%;height:100%;object-fit:cover;">'
+        f'{overlay}</a>'
+    )
+
+
 def oembed(request):
     """oEmbed endpoint — returns rich embed data for image URLs."""
     url = request.GET.get('url', '')
@@ -99,7 +129,7 @@ def oembed(request):
         for img in photos:
             thumb = img.thumbnail_small or img.thumbnail_medium
             if thumb:
-                grid_html += f'<a href="https://photos.kennethreitz.org/images/{img.id}/"><img src="{thumb.url}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;"></a>'
+                grid_html += _oembed_grid_item(img, thumb)
         grid_html += '</div>'
         grid_html += f'<p style="text-align:center;margin-top:8px;"><a href="https://photos.kennethreitz.org/collections/{col.slug}/" style="color:#888;">See more at photos.kennethreitz.org.</a></p></div>'
 
@@ -132,7 +162,7 @@ def oembed(request):
         for img in photos:
             thumb = img.thumbnail_small or img.thumbnail_medium
             if thumb:
-                grid_html += f'<a href="https://photos.kennethreitz.org/images/{img.id}/"><img src="{thumb.url}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;"></a>'
+                grid_html += _oembed_grid_item(img, thumb)
         grid_html += '</div>'
         grid_html += f'<p style="text-align:center;margin-top:8px;"><a href="https://photos.kennethreitz.org" style="color:#888;">See more at photos.kennethreitz.org.</a></p>'
 
