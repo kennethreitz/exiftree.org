@@ -2,92 +2,86 @@
 
 ## Project
 
-ExifTree — a personal photography portfolio organized by the gear used to create it. Browse photos through cameras, lenses, and EXIF metadata.
+ExifTree — a personal photography portfolio organized by the gear, places, and subjects that define it. AI-powered metadata, EXIF-based discovery, infinite scroll.
 
-**Domain:** exiftree.org
-**Stack:** Django 5.x · Python 3.12+ · PostgreSQL · Celery + Redis
-**Architecture doc:** `architecture.md`
+**Live:** photos.kennethreitz.org
+**Stack:** Django 6.x · Python 3.14 · PostgreSQL · Celery · django-bolt · Tigris (S3) · OpenAI
+
+## Architecture
+
+Single-tenant. One owner account. No public registration, no multi-user features.
+
+### Apps
+
+- `core` — Models (User, Image, ExifData, Camera, Lens, Tag, City, SiteConfig). Other apps import from here.
+- `tree` — Browse pages: cameras, lenses, tags, cities. No models.
+- `gallery` — Collections for organizing photos.
+- `ingest` — Upload pipeline, EXIF extraction, thumbnail generation, AI description, geocoding.
+- `search` — EXIF-powered search across all metadata including AI fields.
+
+### Key Models
+
+- **Image** — photos with thumbnails, AI title/description, tags (M2M), city (FK), visibility
+- **ExifData** — parsed EXIF + raw JSON blob, linked to Camera/Lens
+- **Tag** — AI-generated, used for word cloud browsing
+- **City** — reverse-geocoded from GPS, grouped by continent/country/state
+- **SiteConfig** — singleton for site title, tagline, analytics code, OpenAI key, AI prompt
+
+### Image Pipeline (ingest)
+
+1. Validate → 2. Extract EXIF → 3. Normalize camera/lens → 4. Perceptual hash → 5. Generate thumbnails → 6. Create ExifData → 7. Reverse geocode to city → 8. Apply cleanup rules → 9. Mark processed
+
+AI description happens async after processing via Celery task.
+
+### Cleanup Rules
+
+Defined in `core/management/commands/cleanup.py` and `ingest/pipeline.py`:
+- Delete: 2008, 2019, 2020, Dec 26 2014, Dec 22 2017
+- Fix: clear dates before 2008 and 2021+
+- Cities: block CN, JP, KG, MN, RU. India only allows Bangalore/Mysore.
 
 ## Code Style
 
-- Python: follow PEP 8, use type hints on function signatures
-- Django: fat models, thin views — business logic lives on the model or in service functions, not in views
-- Imports: stdlib → third-party → django → local apps, separated by blank lines
-- Strings: double quotes for user-facing text, single quotes for identifiers and dict keys
-- Tests: use pytest + pytest-django, not unittest
-
-## Project Layout
-
-The Django project is created in the repo root (`django-admin startproject exiftree .`) — `manage.py` lives at the top level, not nested in a subdirectory.
-
-## Django App Structure
-
-The project is organized into focused Django apps:
-
-- `core` — foundational models (User, Image, Camera, Lens, ExifData). Other apps import from here but never the reverse.
-- `tree` — browse-by-gear discovery pages. No models, reads from core.
-- `gallery` — collections for organizing photos.
-- `ingest` — upload pipeline, EXIF extraction, thumbnail generation.
-- `search` — EXIF-powered filtering and search.
-
-**Single-tenant:** This is a single-photographer tool. There is one owner account; there are no public user profiles, user listings, groups, or community features.
-
-**Dependency rule:** `core` depends on nothing. All other apps may depend on `core`. Avoid cross-dependencies between feature apps — if two apps need to share logic, it probably belongs in `core`.
+- Python: PEP 8, type hints on function signatures
+- Django: fat models, thin views
+- Imports: stdlib → third-party → django → local apps
+- Strings: double quotes for user-facing, single quotes for identifiers
+- Templates: HTMX for interactivity, vanilla JS only where required (upload, manage multi-select)
 
 ## Models
 
-- Always use `UUIDField` for primary keys (not auto-increment integers)
-- Add `created_at` and `updated_at` timestamps to every model
-- Use `SlugField` on anything that appears in a URL
-- ExifData stores raw EXIF as a JSONField alongside parsed/indexed fields — never throw away the raw data
-- Camera and Lens records are canonical/normalized — raw EXIF strings map to these via the normalization layer in `core/normalization.py`
-
-## EXIF Normalization
-
-This is critical infrastructure. EXIF strings are inconsistent across manufacturers. The normalization pipeline must:
-
-- Strip redundant manufacturer prefixes ("NIKON CORPORATION NIKON D850" → "Nikon", "D850")
-- Handle case normalization
-- Deduplicate via a lookup table of known aliases
-- Create new Camera/Lens records only when no match exists
-- Be idempotent — running normalization twice on the same input produces the same result
-
-## Image Pipeline
-
-Uploads flow through `ingest`:
-
-1. Validate format and size
-2. Extract EXIF (Pillow / exifread)
-3. Normalize camera/lens → core models
-4. Generate thumbnails (small, medium, large)
-5. Store originals + thumbnails in object storage (Cloudflare R2)
-6. Create Image + ExifData records
-
-All processing after initial validation happens async via Celery tasks. Never block the request/response cycle on image processing.
+- UUIDField primary keys everywhere
+- created_at/updated_at timestamps on every model
+- SlugField on anything in a URL
+- ExifData keeps raw JSON — never discard it
 
 ## Frontend
 
-Django templates + HTMX for interactivity unless otherwise decided. Keep JavaScript minimal. The site should work without JS enabled for core browsing.
-
-## Database
-
-PostgreSQL. Key indexing priorities:
-
-- ExifData: camera_id, lens_id, focal_length, aperture, iso, date_taken
-- Image: upload_date, visibility
-- Camera/Lens: slug, manufacturer
+Django templates + HTMX. No frontend framework. Minimal JS. Session auth (not JWT).
 
 ## URLs
 
-- Camera tree: `/cameras/`, `/cameras/<manufacturer>/`, `/cameras/<manufacturer>/<model>/`
-- Lens tree: `/lenses/`, `/lenses/<manufacturer>/<model>/`
-- Collections: `/collections/`, `/collections/<slug>/`
+- `/cameras/`, `/cameras/<slug>/`
+- `/lenses/`, `/lenses/<slug>/`
+- `/tags/`, `/tags/<slug>/`
+- `/cities/`, `/cities/<slug>/`
+- `/collections/`, `/collections/<slug>/`
+- `/images/<uuid>/`
+- `/manage/`, `/upload/`, `/dashboard/`, `/search/`
 
-## When Working on This Project
+## Infrastructure
 
-- Read `architecture.md` for full context on app structure and open decisions
-- Don't add dependencies without discussing tradeoffs first
-- Prefer Django's built-in tools over third-party packages when they're sufficient
-- Write migrations that are reversible
-- Keep the normalization lookup table in a format that's easy to contribute to (YAML or dict, not hardcoded if/else chains)
-- If a piece of logic could live in core or a feature app, default to the feature app — keep core minimal
+- **Fly.io**: web (runbolt) + worker (celery) processes
+- **PostgreSQL**: Fly Postgres, also Celery broker via SQLAlchemy transport
+- **Tigris**: S3-compatible object storage for images (used locally and in prod)
+- **Redis**: local Celery broker (brew service)
+- **python-dotenv**: .env loaded automatically via manage.py
+
+## When Working on This
+
+- Don't add dependencies without discussing tradeoffs
+- Write reversible migrations
+- Keep cleanup rules in the cleanup command, mirrored in pipeline.py
+- Invalid GPS countries are blocked in City.from_coordinates, pipeline, geocode command, AND cleanup
+- The `ai_describe --tail` command watches for new images continuously
+- Restart Celery workers after code changes (`kill` + re-launch)
