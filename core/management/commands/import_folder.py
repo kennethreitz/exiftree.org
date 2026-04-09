@@ -89,23 +89,34 @@ class Command(BaseCommand):
         if options['skip']:
             files = files[options['skip']:]
 
-        # Auto-skip: batch check hashes to find where new images start
+        # Auto-skip: check by filename first (fast), then hash for ambiguous
         self.stdout.write(f"Found {len(files)} images, checking for duplicates...")
-        existing_hashes = set(
-            Image.objects.values_list('content_hash', flat=True)
+        existing_names = set(
+            n.rsplit('/', 1)[-1].rsplit('.', 1)[0]
+            for n in Image.objects.values_list('original', flat=True)
+            if n
         )
-        first_new = 0
-        for i, f in enumerate(files):
-            h = hashlib.sha256(f.read_bytes()).hexdigest()
-            if h not in existing_hashes:
-                first_new = i
-                break
-        else:
-            first_new = len(files)
+        existing_hashes = None  # lazy load
 
-        if first_new > 0:
-            files = files[first_new:]
-            self.stdout.write(f"  Skipped {first_new} duplicates")
+        skipped = 0
+        remaining = []
+        for f in files:
+            stem = f.stem
+            if stem in existing_names:
+                skipped += 1
+                continue
+            # Not matched by name — check hash
+            if existing_hashes is None:
+                existing_hashes = set(Image.objects.values_list('content_hash', flat=True))
+            h = hashlib.sha256(f.read_bytes()).hexdigest()
+            if h in existing_hashes:
+                skipped += 1
+                continue
+            remaining.append(f)
+
+        files = remaining
+        if skipped:
+            self.stdout.write(f"  Skipped {skipped} duplicates")
         self.stdout.write(f"  {len(files)} images to process")
 
         if options['dry_run']:
