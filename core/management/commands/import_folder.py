@@ -34,8 +34,8 @@ class Command(BaseCommand):
             help="Create or add to a collection with this name",
         )
         parser.add_argument(
-            '--recursive', action='store_true',
-            help="Recurse into subdirectories",
+            '--no-recursive', action='store_true',
+            help="Don't recurse into subdirectories",
         )
         parser.add_argument(
             '--visibility', type=str, default='public',
@@ -49,10 +49,6 @@ class Command(BaseCommand):
         parser.add_argument(
             '--workers', type=int, default=1,
             help="Number of concurrent upload workers (default: 1)",
-        )
-        parser.add_argument(
-            '--no-auto', action='store_true',
-            help="Disable auto-seek past duplicates",
         )
         parser.add_argument(
             '--dry-run', action='store_true',
@@ -81,10 +77,10 @@ class Command(BaseCommand):
         self.stdout.write(f"Importing as: {user.username}")
 
         # Collect files
-        if options['recursive']:
-            files = sorted(f for f in folder.rglob('*') if f.suffix.lower() in SUPPORTED_EXTENSIONS)
-        else:
+        if options['no_recursive']:
             files = sorted(f for f in folder.iterdir() if f.suffix.lower() in SUPPORTED_EXTENSIONS)
+        else:
+            files = sorted(f for f in folder.rglob('*') if f.suffix.lower() in SUPPORTED_EXTENSIONS)
 
         if not files:
             self.stderr.write(self.style.WARNING(f"No images found in {folder}"))
@@ -92,27 +88,6 @@ class Command(BaseCommand):
 
         if options['skip']:
             files = files[options['skip']:]
-
-        if not options['no_auto']:
-            self.stdout.write(f"Auto-seeking past duplicates in {len(files)} images...")
-            # Binary search for the first non-duplicate
-            lo, hi = 0, len(files) - 1
-            first_new = len(files)  # default: all are dupes
-
-            while lo <= hi:
-                mid = (lo + hi) // 2
-                content_hash = hashlib.sha256(files[mid].read_bytes()).hexdigest()
-                is_dupe = Image.objects.filter(content_hash=content_hash).exists()
-                if is_dupe:
-                    lo = mid + 1
-                else:
-                    first_new = mid
-                    hi = mid - 1
-
-            # Scan back a bit to catch any gaps
-            start = max(0, first_new - 10)
-            files = files[start:]
-            self.stdout.write(f"  Skipped {start} duplicates, starting at position {start}")
 
         self.stdout.write(f"Found {len(files)} images")
 
