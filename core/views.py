@@ -81,6 +81,42 @@ def oembed(request):
     config = SiteConfig.load()
 
     # Homepage embed — grid of random photos
+    # Collection embed
+    col_match = re.search(r'/collections/([^/]+)/', url)
+    if col_match:
+        from gallery.models import Collection
+        col = Collection.objects.filter(slug=col_match.group(1)).first()
+        if not col:
+            return JsonResponse({'error': 'Not found'}, status=404)
+
+        photos = list(
+            Image.objects.filter(
+                collection_entries__collection=col, is_processing=False,
+            ).exclude(thumbnail_small='')[:12]
+        )
+        grid_html = f'<p><strong>{col.title}</strong></p>'
+        grid_html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">'
+        for img in photos:
+            thumb = img.thumbnail_small or img.thumbnail_medium
+            if thumb:
+                grid_html += f'<a href="https://photos.kennethreitz.org/images/{img.id}/"><img src="{thumb.url}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;"></a>'
+        grid_html += '</div>'
+        grid_html += f'<p style="text-align:center;margin-top:8px;"><a href="https://photos.kennethreitz.org/collections/{col.slug}/" style="color:#e8a820;">{col.title} — {len(photos)} photos</a></p>'
+
+        return JsonResponse({
+            'version': '1.0',
+            'type': 'rich',
+            'title': col.title,
+            'author_name': config.site_title,
+            'author_url': 'https://photos.kennethreitz.org',
+            'provider_name': config.site_title,
+            'provider_url': 'https://photos.kennethreitz.org',
+            'html': grid_html,
+            'width': min(maxwidth, 800),
+            'height': min(maxheight, 400),
+        })
+
+    # Image embed
     match = re.search(r'/images/([0-9a-f-]+)/', url)
     if not match:
         # Assume homepage or non-image URL — return a photo grid
