@@ -40,10 +40,10 @@
 
   <script>
     var year = '{{ year|default:"" }}';
-    var page = 1;
+    var offset = 0;
     var loading = false;
+    var BATCH = 48;
 
-    // Fetch years and build pills
     fetch('/api/images/years').then(r => r.json()).then(function(years) {
       var pills = document.getElementById('pills');
       var all = document.createElement('a');
@@ -64,7 +64,7 @@
 
     function loadImages() {
       loading = true;
-      var url = '/api/images/explore?limit=48&page=' + page;
+      var url = '/api/images/explore?limit=' + BATCH;
       if (year) url += '&year=' + year;
       fetch(url).then(r => r.json()).then(function(images) {
         var grid = document.getElementById('grid');
@@ -93,7 +93,8 @@
           grid.appendChild(a);
         });
 
-        if (images.length >= 48) {
+        offset += images.length;
+        if (images.length >= BATCH) {
           document.getElementById('load-more').style.display = '';
         } else {
           document.getElementById('load-more').style.display = 'none';
@@ -104,7 +105,6 @@
 
     function loadMore() {
       if (loading) return;
-      page++;
       loadImages();
     }
 

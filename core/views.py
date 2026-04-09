@@ -75,6 +75,7 @@ def embed(request):
     return render(request, 'embed.html', {'year': year})
 
 
+
 def _oembed_grid_item(img, thumb):
     """Build an oEmbed grid item with EXIF overlay."""
     overlay = ''
