@@ -92,7 +92,7 @@ def oembed(request):
         photos = list(
             Image.objects.filter(
                 collection_entries__collection=col, is_processing=False,
-            ).exclude(thumbnail_small='')[:12]
+            ).exclude(thumbnail_small='')[:16]
         )
         grid_html = f'<div style="max-width:500px;"><p><strong>{col.title}</strong></p>'
         grid_html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;max-width:500px;">'
@@ -101,7 +101,7 @@ def oembed(request):
             if thumb:
                 grid_html += f'<a href="https://photos.kennethreitz.org/images/{img.id}/"><img src="{thumb.url}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;"></a>'
         grid_html += '</div>'
-        grid_html += f'<p style="text-align:center;margin-top:8px;"><a href="https://photos.kennethreitz.org/collections/{col.slug}/" style="color:#e8a820;">photos.kennethreitz.org</a></p></div>'
+        grid_html += f'<p style="text-align:center;margin-top:8px;"><a href="https://photos.kennethreitz.org/collections/{col.slug}/" style="color:#888;">photos.kennethreitz.org</a></p></div>'
 
         return JsonResponse({
             'version': '1.0',
@@ -123,7 +123,7 @@ def oembed(request):
         photos = list(
             Image.objects.filter(visibility='public', is_processing=False)
             .exclude(thumbnail_small='')
-            .order_by('?')[:12]
+            .order_by('?')[:16]
         )
         if not photos:
             return JsonResponse({'error': 'No photos'}, status=404)
@@ -134,7 +134,7 @@ def oembed(request):
             if thumb:
                 grid_html += f'<a href="https://photos.kennethreitz.org/images/{img.id}/"><img src="{thumb.url}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;"></a>'
         grid_html += '</div>'
-        grid_html += f'<p style="text-align:center;margin-top:8px;"><a href="https://photos.kennethreitz.org" style="color:#e8a820;">photos.kennethreitz.org</a></p>'
+        grid_html += f'<p style="text-align:center;margin-top:8px;"><a href="https://photos.kennethreitz.org" style="color:#888;">photos.kennethreitz.org</a></p>'
 
         return JsonResponse({
             'version': '1.0',
@@ -196,7 +196,7 @@ def oembed(request):
         html_parts.append(f'<p>{description}</p>')
     if exif_line:
         html_parts.append(f'<p style="color:#888;font-size:0.85em;">{exif_line}</p>')
-    html_parts.append(f'<p style="text-align:center;margin-top:4px;"><a href="https://photos.kennethreitz.org/images/{image.id}/" style="color:#e8a820;">photos.kennethreitz.org</a></p></div>')
+    html_parts.append(f'<p style="text-align:center;margin-top:4px;"><a href="https://photos.kennethreitz.org/images/{image.id}/" style="color:#888;">photos.kennethreitz.org</a></p></div>')
 
     data['html'] = '\n'.join(html_parts)
     data['type'] = 'rich'
