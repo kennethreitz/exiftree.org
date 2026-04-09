@@ -69,6 +69,9 @@ def home(request):
     })
 
 
+from django.views.decorators.clickjacking import xframe_options_exempt
+
+@xframe_options_exempt
 def embed(request):
     """Embeddable mini version of the site for iframes."""
     year = request.GET.get('year', '')
