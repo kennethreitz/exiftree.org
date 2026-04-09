@@ -823,46 +823,6 @@ async def search_images(
 
 
 # ---------------------------------------------------------------------------
-# Import
-# ---------------------------------------------------------------------------
-
-import_router = Router(prefix="/api/import", tags=["import"])
-
-
-class FlickrImportInput(msgspec.Struct):
-    flickr_user: str
-    api_key: str
-    set_id: str = ''
-    max: int = 0
-
-
-@import_router.post(
-    "/flickr",
-    auth=[JWTAuthentication()],
-    guards=[IsAuthenticated()],
-)
-@rate_limit(rps=1, key="ip")
-async def start_flickr_import(request: Request, data: FlickrImportInput):
-    from asgiref.sync import sync_to_async
-    from ingest.tasks import flickr_import_all_task
-
-    try:
-        await sync_to_async(flickr_import_all_task.apply_async)(
-            args=[data.flickr_user, data.api_key, request.user.username],
-            kwargs={'set_id': data.set_id},
-            ignore_result=True,
-        )
-    except Exception:
-        # No Celery — fall back to CLI
-        return Response({
-            "message": "No background worker available. Run from CLI instead.",
-            "detail": f"uv run python manage.py import_flickr {data.flickr_user}",
-        }, status_code=503)
-
-    return Response({"message": "Import started — dispatching sets to background workers"}, status_code=202)
-
-
-# ---------------------------------------------------------------------------
 # Wire up routers
 # ---------------------------------------------------------------------------
 
@@ -872,7 +832,6 @@ api.include_router(lenses_router)
 api.include_router(images_router)
 api.include_router(collections_router)
 api.include_router(search_router)
-api.include_router(import_router)
 
 # Mount Django views (admin, templates) as fallback for non-API routes
 api.mount_django("/", clear_root_path=True)

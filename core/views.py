@@ -273,6 +273,3 @@ def manage_add_to_collection(request):
     return redirect('manage')
 
 
-@login_required
-def flickr_import(request):
-    return render(request, 'flickr_import.html')
