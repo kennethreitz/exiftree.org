@@ -91,23 +91,29 @@ class Command(BaseCommand):
 
         # Auto-skip: check by filename first (fast), then hash for ambiguous
         self.stdout.write(f"Found {len(files)} images, checking for duplicates...")
+
+        # Normalize names: strip path, extension, and convert spaces/underscores
+        def normalize(name):
+            stem = name.rsplit('/', 1)[-1].rsplit('.', 1)[0]
+            return stem.replace(' ', '_').replace('-', '_').lower()
+
         existing_names = set(
-            n.rsplit('/', 1)[-1].rsplit('.', 1)[0]
+            normalize(n)
             for n in Image.objects.values_list('original', flat=True)
             if n
         )
-        existing_hashes = None  # lazy load
+        existing_hashes = set(
+            Image.objects.exclude(content_hash='').values_list('content_hash', flat=True)
+        )
+        self.stdout.write(f"  {len(existing_names)} known filenames, {len(existing_hashes)} known hashes")
 
-        skipped = 0
         remaining = []
+        skipped = 0
         for f in files:
-            stem = f.stem
-            if stem in existing_names:
+            if normalize(f.name) in existing_names:
                 skipped += 1
                 continue
             # Not matched by name — check hash
-            if existing_hashes is None:
-                existing_hashes = set(Image.objects.values_list('content_hash', flat=True))
             h = hashlib.sha256(f.read_bytes()).hexdigest()
             if h in existing_hashes:
                 skipped += 1
@@ -117,7 +123,7 @@ class Command(BaseCommand):
         files = remaining
         if skipped:
             self.stdout.write(f"  Skipped {skipped} duplicates")
-        self.stdout.write(f"  {len(files)} images to process")
+        self.stdout.write(f"  {len(files)} new images to import")
 
         if options['dry_run']:
             for f in files:
