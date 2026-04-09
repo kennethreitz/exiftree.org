@@ -89,7 +89,24 @@ class Command(BaseCommand):
         if options['skip']:
             files = files[options['skip']:]
 
-        self.stdout.write(f"Found {len(files)} images")
+        # Auto-skip: batch check hashes to find where new images start
+        self.stdout.write(f"Found {len(files)} images, checking for duplicates...")
+        existing_hashes = set(
+            Image.objects.values_list('content_hash', flat=True)
+        )
+        first_new = 0
+        for i, f in enumerate(files):
+            h = hashlib.sha256(f.read_bytes()).hexdigest()
+            if h not in existing_hashes:
+                first_new = i
+                break
+        else:
+            first_new = len(files)
+
+        if first_new > 0:
+            files = files[first_new:]
+            self.stdout.write(f"  Skipped {first_new} duplicates")
+        self.stdout.write(f"  {len(files)} images to process")
 
         if options['dry_run']:
             for f in files:
