@@ -90,7 +90,7 @@ import dj_database_url
 DATABASES = {
     "default": dj_database_url.config(
         default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-        conn_max_age=600,
+        conn_max_age=60,
         conn_health_checks=True,
     )
 }
@@ -174,6 +174,8 @@ else:
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_BROKER_POOL_LIMIT = 1
+CELERY_BROKER_TRANSPORT_OPTIONS = {'max_retries': 3}
 
 LOGIN_REDIRECT_URL = '/'
 LOGIN_URL = '/login/'
