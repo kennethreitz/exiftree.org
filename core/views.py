@@ -1,7 +1,9 @@
+import json
 import random
 
 from django.db.models import Count
 from django.db.models.functions import ExtractYear
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 
 from core.models import ExifData, Image
@@ -65,6 +67,104 @@ def home(request):
         'has_more': has_more,
         'total_count': len(all_ids),
     })
+
+
+def oembed(request):
+    """oEmbed endpoint — returns rich embed data for image URLs."""
+    url = request.GET.get('url', '')
+    maxwidth = int(request.GET.get('maxwidth', 800))
+    maxheight = int(request.GET.get('maxheight', 600))
+    fmt = request.GET.get('format', 'json')
+
+    import re
+    from core.models import SiteConfig
+    config = SiteConfig.load()
+
+    # Homepage embed — grid of random photos
+    match = re.search(r'/images/([0-9a-f-]+)/', url)
+    if not match:
+        # Assume homepage or non-image URL — return a photo grid
+        photos = list(
+            Image.objects.filter(visibility='public', is_processing=False)
+            .exclude(thumbnail_small='')
+            .order_by('?')[:12]
+        )
+        if not photos:
+            return JsonResponse({'error': 'No photos'}, status=404)
+
+        grid_html = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">'
+        for img in photos:
+            thumb = img.thumbnail_small or img.thumbnail_medium
+            if thumb:
+                grid_html += f'<a href="https://photos.kennethreitz.org/images/{img.id}/"><img src="{thumb.url}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;"></a>'
+        grid_html += '</div>'
+        grid_html += f'<p style="text-align:center;margin-top:8px;"><a href="https://photos.kennethreitz.org" style="color:#e8a820;">{config.site_title} — {config.tagline}</a></p>'
+
+        return JsonResponse({
+            'version': '1.0',
+            'type': 'rich',
+            'title': config.site_title,
+            'author_name': config.site_title,
+            'author_url': 'https://photos.kennethreitz.org',
+            'provider_name': config.site_title,
+            'provider_url': 'https://photos.kennethreitz.org',
+            'html': grid_html,
+            'width': min(maxwidth, 800),
+            'height': min(maxheight, 400),
+        })
+
+    image = Image.objects.filter(
+        id=match.group(1), visibility=Image.Visibility.PUBLIC,
+    ).select_related('exif', 'exif__camera', 'exif__lens').first()
+
+    if not image:
+        return JsonResponse({'error': 'Not found'}, status=404)
+
+    thumb = image.thumbnail_large or image.thumbnail_medium or image.thumbnail_small
+    title = image.ai_title or image.title or 'Photograph'
+
+    # Build EXIF summary
+    exif_parts = []
+    if image.exif:
+        if image.exif.camera:
+            exif_parts.append(image.exif.camera.display_name)
+        if image.exif.lens:
+            exif_parts.append(image.exif.lens.display_name)
+        if image.exif.focal_length:
+            exif_parts.append(f"{image.exif.focal_length}mm")
+        if image.exif.aperture:
+            exif_parts.append(f"f/{image.exif.aperture}")
+        if image.exif.iso:
+            exif_parts.append(f"ISO {image.exif.iso}")
+    exif_line = ' · '.join(exif_parts)
+
+    data = {
+        'version': '1.0',
+        'type': 'photo',
+        'title': title,
+        'author_name': config.site_title,
+        'author_url': 'https://photos.kennethreitz.org',
+        'provider_name': config.site_title,
+        'provider_url': 'https://photos.kennethreitz.org',
+        'url': thumb.url if thumb else '',
+        'width': min(maxwidth, 1600),
+        'height': min(maxheight, 1200),
+    }
+
+    # Add rich HTML for consumers that support it
+    description = image.ai_description or ''
+    html_parts = [f'<img src="{thumb.url}" alt="{title}" style="max-width:100%;">']
+    if title:
+        html_parts.append(f'<p><strong>{title}</strong></p>')
+    if description:
+        html_parts.append(f'<p>{description}</p>')
+    if exif_line:
+        html_parts.append(f'<p style="color:#888;font-size:0.85em;">{exif_line}</p>')
+
+    data['html'] = '\n'.join(html_parts)
+    data['type'] = 'rich'
+
+    return JsonResponse(data)
 
 
 def image_detail(request, image_id):

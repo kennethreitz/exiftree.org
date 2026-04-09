@@ -7,7 +7,7 @@ from django.http import HttpResponse
 from django.urls import include, path
 from django.views.generic import TemplateView
 
-from core.views import home, image_detail
+from core.views import home, image_detail, oembed
 
 
 class ImageSitemap(Sitemap):
@@ -125,6 +125,7 @@ urlpatterns = [
     path("apple-touch-icon.png", lambda r: HttpResponse(status=204)),
     path("apple-touch-icon-precomposed.png", lambda r: HttpResponse(status=204)),
     path("", home, name="home"),
+    path("oembed", oembed, name="oembed"),
     path("images/<uuid:image_id>/", image_detail, name="image-detail"),
     path("", include("tree.urls")),
     path("", include("gallery.urls")),

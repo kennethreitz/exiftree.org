@@ -10,6 +10,7 @@
 {% block twitter_description %}{% if image.ai_description %}{{ image.ai_description }}{% elif image.exif and image.exif.camera %}Shot on {{ image.exif.camera.display_name }}{% endif %}{% endblock %}
 {% block twitter_image %}{% if image.thumbnail_large %}<meta name="twitter:image" content="{{ image.thumbnail_large.url }}">{% elif image.thumbnail_medium %}<meta name="twitter:image" content="{{ image.thumbnail_medium.url }}">{% endif %}{% endblock %}
 {% block head %}
+<link rel="alternate" type="application/json+oembed" href="https://photos.kennethreitz.org/oembed?url=https://photos.kennethreitz.org/images/{{ image.id }}/&format=json" title="{{ image.ai_title|default:'Photo' }}">
 {% if image.tags.all %}<meta name="keywords" content="{% for tag in image.tags.all %}{{ tag.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if image.exif and image.exif.camera %}, {{ image.exif.camera.display_name }}{% endif %}{% if image.exif and image.exif.lens %}, {{ image.exif.lens.display_name }}{% endif %}">{% endif %}
 {% if image.exif and image.exif.gps_latitude and image.exif.gps_longitude %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
