@@ -170,9 +170,9 @@ def oembed(request):
         grid_html = '<div style="max-width:800px;">'
         if years:
             grid_html += '<div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-bottom:8px;">'
-            grid_html += f'<a href="https://photos.kennethreitz.org" target="_blank" style="padding:2px 8px;border-radius:999px;font-size:0.75em;background:#222;color:#e8a820;text-decoration:none;border:1px solid #333;">All</a>'
+            grid_html += f'<a href="https://photos.kennethreitz.org" target="_blank" style="padding:2px 8px;border-radius:999px;font-size:0.75em;background:#222;color:#e8a820;text-decoration:none;border:1px solid #333;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;">All</a>'
             for y in years:
-                grid_html += f'<a href="https://photos.kennethreitz.org/?year={y}" target="_blank" style="padding:2px 8px;border-radius:999px;font-size:0.75em;background:#222;color:#ccc;text-decoration:none;border:1px solid #333;">{y}</a>'
+                grid_html += f'<a href="https://photos.kennethreitz.org/?year={y}" target="_blank" style="padding:2px 8px;border-radius:999px;font-size:0.75em;background:#222;color:#ccc;text-decoration:none;border:1px solid #333;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;">{y}</a>'
             grid_html += '</div>'
         grid_html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">'
         for img in photos:
