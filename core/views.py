@@ -94,14 +94,14 @@ def oembed(request):
                 collection_entries__collection=col, is_processing=False,
             ).exclude(thumbnail_small='')[:12]
         )
-        grid_html = f'<p><strong>{col.title}</strong></p>'
-        grid_html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">'
+        grid_html = f'<div style="max-width:500px;"><p><strong>{col.title}</strong></p>'
+        grid_html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;max-width:500px;">'
         for img in photos:
             thumb = img.thumbnail_small or img.thumbnail_medium
             if thumb:
                 grid_html += f'<a href="https://photos.kennethreitz.org/images/{img.id}/"><img src="{thumb.url}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;"></a>'
         grid_html += '</div>'
-        grid_html += f'<p style="text-align:center;margin-top:8px;"><a href="https://photos.kennethreitz.org/collections/{col.slug}/" style="color:#e8a820;">{col.title} — {len(photos)} photos</a></p>'
+        grid_html += f'<p style="text-align:center;margin-top:8px;"><a href="https://photos.kennethreitz.org/collections/{col.slug}/" style="color:#e8a820;">photos.kennethreitz.org</a></p></div>'
 
         return JsonResponse({
             'version': '1.0',
@@ -128,13 +128,13 @@ def oembed(request):
         if not photos:
             return JsonResponse({'error': 'No photos'}, status=404)
 
-        grid_html = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">'
+        grid_html = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;max-width:500px;">'
         for img in photos:
             thumb = img.thumbnail_small or img.thumbnail_medium
             if thumb:
                 grid_html += f'<a href="https://photos.kennethreitz.org/images/{img.id}/"><img src="{thumb.url}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;"></a>'
         grid_html += '</div>'
-        grid_html += f'<p style="text-align:center;margin-top:8px;"><a href="https://photos.kennethreitz.org" style="color:#e8a820;">{config.site_title} — {config.tagline}</a></p>'
+        grid_html += f'<p style="text-align:center;margin-top:8px;"><a href="https://photos.kennethreitz.org" style="color:#e8a820;">photos.kennethreitz.org</a></p>'
 
         return JsonResponse({
             'version': '1.0',
@@ -189,13 +189,14 @@ def oembed(request):
 
     # Add rich HTML for consumers that support it
     description = image.ai_description or ''
-    html_parts = [f'<img src="{thumb.url}" alt="{title}" style="max-width:100%;">']
+    html_parts = [f'<div style="max-width:500px;"><img src="{thumb.url}" alt="{title}" style="max-width:100%;border-radius:4px;">']
     if title:
         html_parts.append(f'<p><strong>{title}</strong></p>')
     if description:
         html_parts.append(f'<p>{description}</p>')
     if exif_line:
         html_parts.append(f'<p style="color:#888;font-size:0.85em;">{exif_line}</p>')
+    html_parts.append(f'<p style="text-align:center;margin-top:4px;"><a href="https://photos.kennethreitz.org/images/{image.id}/" style="color:#e8a820;">photos.kennethreitz.org</a></p></div>')
 
     data['html'] = '\n'.join(html_parts)
     data['type'] = 'rich'
