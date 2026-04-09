@@ -199,13 +199,14 @@ def oembed(request):
     thumb = image.thumbnail_large or image.thumbnail_medium or image.thumbnail_small
     title = image.ai_title or image.title or 'Photograph'
 
-    # Build EXIF summary
+    # Build EXIF summary with links
+    base = 'https://photos.kennethreitz.org'
     exif_parts = []
     if image.exif:
         if image.exif.camera:
-            exif_parts.append(image.exif.camera.display_name)
+            exif_parts.append(f'<a href="{base}/cameras/{image.exif.camera.slug}/" target="_blank" style="color:#888;">{image.exif.camera.display_name}</a>')
         if image.exif.lens:
-            exif_parts.append(image.exif.lens.display_name)
+            exif_parts.append(f'<a href="{base}/lenses/{image.exif.lens.slug}/" target="_blank" style="color:#888;">{image.exif.lens.display_name}</a>')
         if image.exif.focal_length:
             exif_parts.append(f"{image.exif.focal_length}mm")
         if image.exif.aperture:
