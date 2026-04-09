@@ -156,7 +156,7 @@ def tag_detail(request, slug):
 def city_list(request):
     cities = (
         City.objects.annotate(image_count=Count('images'))
-        .filter(image_count__gt=0)
+        .filter(image_count__gte=5)
         .order_by('continent', 'country', 'region', 'name')
     )
 
