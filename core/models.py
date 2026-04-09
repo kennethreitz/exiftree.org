@@ -222,7 +222,11 @@ class City(models.Model):
             city_name_check = r['name']
             admin2_check = r.get('admin2', '')
             allowed = ALLOWED_CITIES_BY_COUNTRY[cc]
-            if city_name_check not in allowed and admin2_check not in allowed:
+            match = any(
+                a in city_name_check or a in admin2_check
+                for a in allowed
+            )
+            if not match:
                 return None
 
         continent_code = COUNTRY_TO_CONTINENT.get(cc, 'NA')
