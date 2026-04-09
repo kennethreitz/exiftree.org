@@ -87,7 +87,10 @@ def process_image(image: Image) -> None:
         except Exception:
             pass
 
-    # 7. Mark as processed
+    # 7. Apply cleanup rules to this image
+    _cleanup_image(image, exif)
+
+    # 8. Mark as processed
     image.is_processing = False
     image.save(update_fields=['is_processing', 'city', 'updated_at'])
 
@@ -131,6 +134,29 @@ def generate_thumbnails(image: Image, file) -> None:
             field.save(filename, ContentFile(buffer.read()), save=False)
 
     image.save(update_fields=['thumbnail_small', 'thumbnail_medium', 'thumbnail_large'])
+
+
+def _cleanup_image(image: Image, exif: dict) -> None:
+    """Apply cleanup rules inline during processing."""
+    date_taken = exif.get('date_taken')
+    if not date_taken:
+        return
+
+    year = date_taken.year
+    date_str = date_taken.strftime('%Y-%m-%d')
+
+    # Delete rules — mark for deletion
+    DELETE_DATES = {'2014-12-26', '2017-12-22'}
+    DELETE_YEARS = {2008, 2019, 2020}
+
+    if year in DELETE_YEARS or date_str in DELETE_DATES:
+        image.delete()
+        return
+
+    # Fix rules — clear bad dates
+    if year < 2008 or year >= 2021:
+        from core.models import ExifData
+        ExifData.objects.filter(image=image).update(date_taken=None)
 
 
 def _apply_exif_orientation(img: PILImage.Image) -> PILImage.Image:
