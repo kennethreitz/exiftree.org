@@ -94,8 +94,8 @@ def oembed(request):
                 collection_entries__collection=col, is_processing=False,
             ).exclude(thumbnail_small='')[:45]
         )
-        grid_html = f'<div style="max-width:500px;"><p><strong>{col.title}</strong></p>'
-        grid_html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;max-width:500px;">'
+        grid_html = f'<div style="max-width:800px;"><p><strong>{col.title}</strong></p>'
+        grid_html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;max-width:800px;">'
         for img in photos:
             thumb = img.thumbnail_small or img.thumbnail_medium
             if thumb:
@@ -128,7 +128,7 @@ def oembed(request):
         if not photos:
             return JsonResponse({'error': 'No photos'}, status=404)
 
-        grid_html = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;max-width:500px;">'
+        grid_html = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;max-width:800px;">'
         for img in photos:
             thumb = img.thumbnail_small or img.thumbnail_medium
             if thumb:
@@ -189,7 +189,7 @@ def oembed(request):
 
     # Add rich HTML for consumers that support it
     description = image.ai_description or ''
-    html_parts = [f'<div style="max-width:500px;"><img src="{thumb.url}" alt="{title}" style="max-width:100%;border-radius:4px;">']
+    html_parts = [f'<div style="max-width:800px;"><img src="{thumb.url}" alt="{title}" style="max-width:100%;border-radius:4px;">']
     if title:
         html_parts.append(f'<p><strong>{title}</strong></p>')
     if description:
