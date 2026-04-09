@@ -148,7 +148,7 @@ def _cleanup_image(image: Image, exif: dict) -> bool:
 
     # Delete rules
     DELETE_DATES = {'2014-12-26', '2017-12-22'}
-    DELETE_YEARS = {2008, 2019, 2020}
+    DELETE_YEARS = {2008, 2020}
 
     if year in DELETE_YEARS or date_str in DELETE_DATES:
         image.delete()

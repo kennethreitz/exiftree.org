@@ -22,10 +22,6 @@ DELETE_RULES = [
         'filter': Q(exif__date_taken__year=2008),
     },
     {
-        'name': "All photos from 2019",
-        'filter': Q(exif__date_taken__year=2019),
-    },
-    {
         'name': "All photos from 2020",
         'filter': Q(exif__date_taken__year=2020),
     },
