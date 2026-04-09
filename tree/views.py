@@ -230,6 +230,40 @@ def city_detail(request, slug):
     })
 
 
+def year_list(request):
+    from core.models import ExifData
+    from django.db.models.functions import ExtractYear
+
+    years = (
+        ExifData.objects.filter(date_taken__isnull=False)
+        .annotate(year=ExtractYear('date_taken'))
+        .values('year')
+        .annotate(image_count=Count('id'))
+        .order_by('-year')
+    )
+    return render(request, 'tree/year_list.html', {'years': years})
+
+
+def year_detail(request, year):
+    qs = (
+        Image.objects.filter(
+            exif__date_taken__year=year,
+            visibility=Image.Visibility.PUBLIC,
+            is_processing=False,
+        )
+        .select_related('user', 'exif', 'exif__camera', 'exif__lens')
+    )
+    images, page, has_more = _paginate_shuffled(request, qs)
+
+    if request.headers.get('HX-Request'):
+        return render(request, 'includes/image_grid_page.html', {
+            'images': images, 'page': page, 'has_more': has_more,
+        })
+    return render(request, 'tree/year_detail.html', {
+        'year': year, 'images': images, 'page': page, 'has_more': has_more,
+    })
+
+
 def lens_detail(request, slug):
     lens = get_object_or_404(Lens, slug=slug)
     qs = (

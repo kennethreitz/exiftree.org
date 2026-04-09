@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ year }} — {{ site_title }}{% endblock %}
+{% block meta_description %}Photos from {{ year }}{% endblock %}
+{% block og_title %}{{ year }}{% endblock %}
+{% block og_description %}Photos from {{ year }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>{{ year }}</h1>
+</div>
+
+<div class="image-grid" style="grid-template-columns: repeat(4, 1fr);">
+  {% include "includes/image_grid_page.html" %}
+</div>
+{% endblock %}

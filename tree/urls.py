@@ -15,4 +15,6 @@ urlpatterns = [
     path('tags/<slug:slug>/', views.tag_detail, name='tag-detail'),
     path('cities/', views.city_list, name='city-list'),
     path('cities/<slug:slug>/', views.city_detail, name='city-detail'),
+    path('years/', views.year_list, name='year-list'),
+    path('years/<int:year>/', views.year_detail, name='year-detail'),
 ]
