@@ -113,17 +113,10 @@ class Command(BaseCommand):
             if normalize(f.name) in existing_names:
                 skipped += 1
                 continue
-            # Not matched by name — check hash
-            h = hashlib.sha256(f.read_bytes()).hexdigest()
-            if h in existing_hashes:
-                skipped += 1
-                continue
             remaining.append(f)
 
         files = remaining
-        if skipped:
-            self.stdout.write(f"  Skipped {skipped} duplicates")
-        self.stdout.write(f"  {len(files)} new images to import")
+        self.stdout.write(f"  Skipped {skipped} by filename, {len(files)} to check/import")
 
         if options['dry_run']:
             for f in files:
