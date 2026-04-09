@@ -92,7 +92,7 @@ def oembed(request):
         photos = list(
             Image.objects.filter(
                 collection_entries__collection=col, is_processing=False,
-            ).exclude(thumbnail_small='')[:45]
+            ).exclude(thumbnail_small='')[:44]
         )
         grid_html = f'<div style="max-width:800px;"><p><strong>{col.title}</strong></p>'
         grid_html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;max-width:800px;">'
@@ -123,7 +123,7 @@ def oembed(request):
         photos = list(
             Image.objects.filter(visibility='public', is_processing=False)
             .exclude(thumbnail_small='')
-            .order_by('?')[:45]
+            .order_by('?')[:44]
         )
         if not photos:
             return JsonResponse({'error': 'No photos'}, status=404)
