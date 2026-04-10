@@ -92,9 +92,9 @@
         });
 
         offset += images.length;
+        hasMore = images.length >= BATCH;
         if (firstLoad) { BATCH = 48; firstLoad = false; }
         loading = false;
-        hasMore = images.length >= BATCH || firstLoad;
       });
     }
 
