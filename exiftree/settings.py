@@ -53,6 +53,7 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = "core.User"
 
 MIDDLEWARE = [
+    "core.middleware.RequestLoggingMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -229,6 +230,11 @@ LOGGING = {
             'propagate': False,
         },
         'core': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'core.requests': {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': False,
