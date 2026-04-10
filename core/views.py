@@ -74,8 +74,13 @@ from django.views.decorators.clickjacking import xframe_options_exempt
 @xframe_options_exempt
 def embed(request):
     """Embeddable mini version of the site for iframes."""
+    from core.models import SiteConfig
+    config = SiteConfig.load()
     year = request.GET.get('year', '')
-    return render(request, 'embed.html', {'year': year})
+    return render(request, 'embed.html', {
+        'year': year,
+        'analytics_code': config.analytics_code,
+    })
 
 
 
