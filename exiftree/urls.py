@@ -7,7 +7,7 @@ from django.http import HttpResponse
 from django.urls import include, path
 from django.views.generic import TemplateView
 
-from core.views import embed, home, image_detail, oembed
+from core.views import embed, home, image_detail, oembed, random_image
 
 
 class ImageSitemap(Sitemap):
@@ -128,6 +128,7 @@ urlpatterns = [
     path("", home, name="home"),
     path("oembed", oembed, name="oembed"),
     path("embed/", embed, name="embed"),
+    path("random/", random_image, name="random"),
     path("images/<uuid:image_id>/", image_detail, name="image-detail"),
     path("", include("tree.urls")),
     path("", include("gallery.urls")),

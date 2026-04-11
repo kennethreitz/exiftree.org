@@ -4,11 +4,23 @@ import random
 from django.db.models import Count
 from django.db.models.functions import ExtractYear
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 
 from core.models import ExifData, Image
 
 PAGE_SIZE = 48
+
+
+def random_image(request):
+    img = (
+        Image.objects.filter(visibility='public', is_processing=False)
+        .order_by('?')
+        .values_list('id', flat=True)
+        .first()
+    )
+    if img:
+        return redirect(f'/images/{img}/')
+    return redirect('/')
 
 
 def home(request):
