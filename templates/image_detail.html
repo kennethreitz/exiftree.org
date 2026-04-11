@@ -44,6 +44,22 @@
     {% elif image.thumbnail_small %}<img src="{{ image.thumbnail_small.url }}" alt="{{ image.ai_title|default:image.title }}" style="max-width: 100%; border-radius: var(--radius);">{% endif %}
   </div>
 
+  <!-- Prev / Download / Next -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    {% if prev_image %}<a href="/images/{{ prev_image.id }}/" class="btn" id="prev-link">&larr; Previous</a>{% else %}<span class="btn" style="visibility: hidden;">&larr; Previous</span>{% endif %}
+    <details style="position: relative;">
+      <summary class="btn">Download</summary>
+      <div class="dropdown-menu" style="left: 50%; transform: translateX(-50%); min-width: 180px; margin-top: 0.25rem;">
+        {% if image.thumbnail_small %}<a href="{{ image.thumbnail_small.url }}" download><strong>S</strong> <span style="color: var(--text-muted);">Small (300px)</span></a>{% endif %}
+        {% if image.thumbnail_medium %}<a href="{{ image.thumbnail_medium.url }}" download><strong>M</strong> <span style="color: var(--text-muted);">Medium (800px)</span></a>{% endif %}
+        {% if image.thumbnail_large %}<a href="{{ image.thumbnail_large.url }}" download><strong>L</strong> <span style="color: var(--text-muted);">Large (1600px)</span></a>{% endif %}
+        <hr>
+        {% if image.original %}<a href="{{ image.original.url }}" download><strong>O</strong> <span style="color: var(--text-muted);">Original</span></a>{% endif %}
+      </div>
+    </details>
+    {% if next_image %}<a href="/images/{{ next_image.id }}/" class="btn" id="next-link">Next &rarr;</a>{% else %}<span class="btn" style="visibility: hidden;">Next &rarr;</span>{% endif %}
+  </div>
+
   <!-- Title & Description -->
   {% if image.ai_title %}<h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem;">{{ image.ai_title }}</h1>{% endif %}
   {% if image.ai_description %}<p style="margin-bottom: 1rem;">{{ image.ai_description }}</p>{% endif %}
@@ -110,14 +126,6 @@
     <p style="color: var(--text-muted); font-size: 0.85rem;">{{ image.view_count }} views</p>
   </div>
 
-  <!-- Prev/Next nav -->
-  {% if prev_image or next_image %}
-  <div style="display: flex; justify-content: space-between; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border);">
-    {% if prev_image %}<a href="/images/{{ prev_image.id }}/" class="btn" id="prev-link">&larr; Previous</a>{% else %}<span></span>{% endif %}
-    {% if next_image %}<a href="/images/{{ next_image.id }}/" class="btn" id="next-link">Next &rarr;</a>{% else %}<span></span>{% endif %}
-  </div>
-  {% endif %}
-
   {% if image.exif and image.exif.gps_latitude and image.exif.gps_longitude %}
   <div id="map" style="height: 250px; border-radius: var(--radius); margin: 1rem 0;"></div>
   <script>
@@ -130,18 +138,6 @@
     });
   </script>
   {% endif %}
-
-  <!-- Download -->
-  <details style="position: relative; margin-top: 1rem;">
-    <summary class="btn">Download</summary>
-    <div class="dropdown-menu" style="left: 0; min-width: 180px; margin-top: 0.25rem;">
-      {% if image.thumbnail_small %}<a href="{{ image.thumbnail_small.url }}" download><strong>S</strong> <span style="color: var(--text-muted);">Small (300px)</span></a>{% endif %}
-      {% if image.thumbnail_medium %}<a href="{{ image.thumbnail_medium.url }}" download><strong>M</strong> <span style="color: var(--text-muted);">Medium (800px)</span></a>{% endif %}
-      {% if image.thumbnail_large %}<a href="{{ image.thumbnail_large.url }}" download><strong>L</strong> <span style="color: var(--text-muted);">Large (1600px)</span></a>{% endif %}
-      <hr>
-      {% if image.original %}<a href="{{ image.original.url }}" download><strong>O</strong> <span style="color: var(--text-muted);">Original</span></a>{% endif %}
-    </div>
-  </details>
 </div>
 {% endblock %}
 {% block scripts %}
