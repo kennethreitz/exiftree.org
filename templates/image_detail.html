@@ -110,6 +110,14 @@
     <p style="color: var(--text-muted); font-size: 0.85rem;">{{ image.view_count }} views</p>
   </div>
 
+  <!-- Prev/Next nav -->
+  {% if prev_image or next_image %}
+  <div style="display: flex; justify-content: space-between; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border);">
+    {% if prev_image %}<a href="/images/{{ prev_image.id }}/" class="btn" id="prev-link">&larr; Previous</a>{% else %}<span></span>{% endif %}
+    {% if next_image %}<a href="/images/{{ next_image.id }}/" class="btn" id="next-link">Next &rarr;</a>{% else %}<span></span>{% endif %}
+  </div>
+  {% endif %}
+
   {% if image.exif and image.exif.gps_latitude and image.exif.gps_longitude %}
   <div id="map" style="height: 250px; border-radius: var(--radius); margin: 1rem 0;"></div>
   <script>
@@ -134,14 +142,6 @@
       {% if image.original %}<a href="{{ image.original.url }}" download><strong>O</strong> <span style="color: var(--text-muted);">Original</span></a>{% endif %}
     </div>
   </details>
-
-  <!-- Prev/Next nav -->
-  {% if prev_image or next_image %}
-  <div style="display: flex; justify-content: space-between; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border);">
-    {% if prev_image %}<a href="/images/{{ prev_image.id }}/" class="btn" id="prev-link">&larr; Previous</a>{% else %}<span></span>{% endif %}
-    {% if next_image %}<a href="/images/{{ next_image.id }}/" class="btn" id="next-link">Next &rarr;</a>{% endif %}
-  </div>
-  {% endif %}
 </div>
 {% endblock %}
 {% block scripts %}

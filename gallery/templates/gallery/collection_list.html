@@ -14,10 +14,10 @@
       {% elif c.preview and c.preview.thumbnail_medium %}
       <img src="{{ c.preview.thumbnail_medium.url }}" alt="{{ c.title }}">
       {% endif %}
+      <span class="collection-card-count">{{ c.image_count }}</span>
     </div>
     <div class="collection-card-info">
       <h3>{{ c.title }}</h3>
-      <span class="count">{{ c.image_count }} images</span>
     </div>
   </a>
   {% empty %}
