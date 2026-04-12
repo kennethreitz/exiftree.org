@@ -1,7 +1,21 @@
 import logging
+import re
 import time
 
 logger = logging.getLogger('core.requests')
+
+BOT_PATTERNS = re.compile(
+    r'bot|crawl|spider|slurp|semrush|ahrefs|bytespider|dotbot|mj12|gptbot|'
+    r'bingpreview|yandex|baiduspider|duckduckbot|facebookexternalhit|twitterbot|'
+    r'linkedinbot|applebot|google|mediapartners',
+    re.IGNORECASE,
+)
+
+
+def _detect_bot(user_agent: str) -> str | None:
+    """Return the bot name from User-Agent, or None if not a bot."""
+    match = BOT_PATTERNS.search(user_agent)
+    return match.group(0) if match else None
 
 
 class RequestLoggingMiddleware:
@@ -18,11 +32,25 @@ class RequestLoggingMiddleware:
         if path.startswith('/static/') or path == '/health' or path == '/favicon.ico':
             return response
 
-        logger.info(
-            '%s %s %s %.0fms',
-            request.method,
-            path,
-            response.status_code,
-            duration,
-        )
+        ua = request.META.get('HTTP_USER_AGENT', '')
+        bot = _detect_bot(ua)
+
+        if bot:
+            logger.info(
+                '[BOT:%s] %s %s %s %.0fms ua="%s"',
+                bot,
+                request.method,
+                path,
+                response.status_code,
+                duration,
+                ua[:200],
+            )
+        else:
+            logger.info(
+                '%s %s %s %.0fms',
+                request.method,
+                path,
+                response.status_code,
+                duration,
+            )
         return response
