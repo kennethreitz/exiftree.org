@@ -333,6 +333,7 @@ class Image(models.Model):
         indexes = [
             models.Index(fields=['user', 'upload_date']),
             models.Index(fields=['visibility', 'upload_date']),
+            models.Index(fields=['visibility', 'is_processing', 'upload_date']),
         ]
 
     def __str__(self) -> str:
