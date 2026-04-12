@@ -18,7 +18,7 @@ class ImageSitemap(Sitemap):
         from core.models import Image
         return Image.objects.filter(
             visibility='public', is_processing=False,
-        ).order_by('-upload_date')[:5000]
+        ).order_by('-upload_date')
 
     def location(self, obj):
         return f'/images/{obj.id}/'
