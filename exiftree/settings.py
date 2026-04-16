@@ -98,6 +98,18 @@ DATABASES = {
     )
 }
 
+if DATABASES["default"]["ENGINE"] == "django.db.backends.postgresql":
+    # Fail fast if Postgres disappears — otherwise in-flight queries hang on the
+    # TCP socket forever, saturate the worker pool, and wedge the whole app.
+    DATABASES["default"].setdefault("OPTIONS", {}).update({
+        "connect_timeout": 5,
+        "keepalives": 1,
+        "keepalives_idle": 30,
+        "keepalives_interval": 10,
+        "keepalives_count": 3,
+        "options": "-c statement_timeout=30000",
+    })
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators

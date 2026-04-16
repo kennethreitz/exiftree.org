@@ -2,7 +2,8 @@ import logging
 import re
 import time
 
-from django.db import OperationalError, close_old_connections
+from asgiref.sync import iscoroutinefunction, markcoroutinefunction, sync_to_async
+from django.db import InterfaceError, OperationalError, connections
 
 logger = logging.getLogger('core.requests')
 
@@ -20,18 +21,42 @@ def _detect_bot(user_agent: str) -> str | None:
     return match.group(0) if match else None
 
 
+def _drop_connections():
+    for conn in connections.all(initialized_only=True):
+        conn.close()
+
+
 class DbRetryMiddleware:
-    """Retry once on stale DB connections (e.g. after Postgres restart)."""
+    """Retry once on stale DB connections (e.g. after Postgres restart).
+
+    Supports both sync and async request paths — django-bolt mounts Django
+    under ASGI, so middleware must handle both.
+    """
+
+    sync_capable = True
+    async_capable = True
 
     def __init__(self, get_response):
         self.get_response = get_response
+        self.async_mode = iscoroutinefunction(get_response)
+        if self.async_mode:
+            markcoroutinefunction(self)
 
     def __call__(self, request):
+        if self.async_mode:
+            return self._acall(request)
         try:
             return self.get_response(request)
-        except OperationalError:
-            close_old_connections()
+        except (OperationalError, InterfaceError):
+            _drop_connections()
             return self.get_response(request)
+
+    async def _acall(self, request):
+        try:
+            return await self.get_response(request)
+        except (OperationalError, InterfaceError):
+            await sync_to_async(_drop_connections)()
+            return await self.get_response(request)
 
 
 class RequestLoggingMiddleware:
