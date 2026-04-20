@@ -53,7 +53,6 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = "core.User"
 
 MIDDLEWARE = [
-    "core.middleware.DbRetryMiddleware",
     "core.middleware.RequestLoggingMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",

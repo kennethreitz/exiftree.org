@@ -2,8 +2,7 @@ import logging
 import re
 import time
 
-from asgiref.sync import iscoroutinefunction, markcoroutinefunction, sync_to_async
-from django.db import InterfaceError, OperationalError, connections
+from asgiref.sync import iscoroutinefunction, markcoroutinefunction
 
 logger = logging.getLogger('core.requests')
 
@@ -14,6 +13,9 @@ BOT_PATTERNS = re.compile(
     re.IGNORECASE,
 )
 
+SKIP_PATHS = ('/static/',)
+SKIP_EXACT = {'/health', '/favicon.ico'}
+
 
 def _detect_bot(user_agent: str) -> str | None:
     """Return the bot name from User-Agent, or None if not a bot."""
@@ -21,17 +23,28 @@ def _detect_bot(user_agent: str) -> str | None:
     return match.group(0) if match else None
 
 
-def _drop_connections():
-    for conn in connections.all(initialized_only=True):
-        conn.close()
+def _log(request, response, duration_ms):
+    path = request.path
+    if path in SKIP_EXACT or path.startswith(SKIP_PATHS):
+        return
+    ua = request.META.get('HTTP_USER_AGENT', '')
+    bot = _detect_bot(ua)
+    if bot:
+        logger.info(
+            '[BOT:%s] %s %s %s %.0fms ua="%s"',
+            bot, request.method, path, response.status_code, duration_ms, ua[:200],
+        )
+    else:
+        logger.info(
+            '%s %s %s %.0fms',
+            request.method, path, response.status_code, duration_ms,
+        )
 
 
-class DbRetryMiddleware:
-    """Retry once on stale DB connections (e.g. after Postgres restart).
-
-    Supports both sync and async request paths — django-bolt mounts Django
-    under ASGI, so middleware must handle both.
-    """
+class RequestLoggingMiddleware:
+    """Logs every request. Async-capable so django-bolt's ASGI chain stays
+    async end-to-end — avoids hopping through the asgiref thread pool on
+    every request, which piles up under load."""
 
     sync_capable = True
     async_capable = True
@@ -45,53 +58,13 @@ class DbRetryMiddleware:
     def __call__(self, request):
         if self.async_mode:
             return self._acall(request)
-        try:
-            return self.get_response(request)
-        except (OperationalError, InterfaceError):
-            _drop_connections()
-            return self.get_response(request)
-
-    async def _acall(self, request):
-        try:
-            return await self.get_response(request)
-        except (OperationalError, InterfaceError):
-            await sync_to_async(_drop_connections)()
-            return await self.get_response(request)
-
-
-class RequestLoggingMiddleware:
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
         start = time.time()
         response = self.get_response(request)
-        duration = (time.time() - start) * 1000
+        _log(request, response, (time.time() - start) * 1000)
+        return response
 
-        # Skip static/health/favicon
-        path = request.path
-        if path.startswith('/static/') or path == '/health' or path == '/favicon.ico':
-            return response
-
-        ua = request.META.get('HTTP_USER_AGENT', '')
-        bot = _detect_bot(ua)
-
-        if bot:
-            logger.info(
-                '[BOT:%s] %s %s %s %.0fms ua="%s"',
-                bot,
-                request.method,
-                path,
-                response.status_code,
-                duration,
-                ua[:200],
-            )
-        else:
-            logger.info(
-                '%s %s %s %.0fms',
-                request.method,
-                path,
-                response.status_code,
-                duration,
-            )
+    async def _acall(self, request):
+        start = time.time()
+        response = await self.get_response(request)
+        _log(request, response, (time.time() - start) * 1000)
         return response
