@@ -95,11 +95,13 @@ Django templates + HTMX. No frontend framework. Session auth. Minimal vanilla JS
 
 ## Infrastructure
 
-- **Fly.io**: two processes — `web` (django-bolt) + `worker` (celery -c 2)
-- **PostgreSQL**: Fly Postgres (4GB dedicated). Also Celery broker via `sqla+postgresql://`
-- **Tigris**: S3-compatible object storage for all images (used locally and in prod)
+- **Fly.io**: single `web` process (django-bolt). The `worker` process group is currently absent in `fly.toml` — Celery tasks (AI metadata, etc.) have no consumer in production. Re-add when needed.
+- **PostgreSQL**: Fly Postgres on `exiftree-db`, single `shared-cpu-1x:2048MB` machine (bumped from 1GB after an OOM in mid-April 2026). Also Celery broker via `sqla+postgresql://`.
+- **Tigris**: S3-compatible object storage for all images (used locally and in prod). CORS is configured on the `exiftree-media` bucket for `photos.kennethreitz.org` + `localhost:8000` + `127.0.0.1:8000`.
 - **Redis**: local-only Celery broker (brew service). Not used in production.
-- **GitHub Actions**: auto-deploy on push to main via `flyctl deploy --remote-only`
+- **GitHub Actions**:
+  - `deploy.yml` — auto-deploy on push to main via `flyctl deploy --remote-only`
+  - `daily-restart.yml` — `fly apps restart exiftree` at 08:00 UTC. Originally added as a band-aid for an app wedge that surfaced after Postgres restarts; v118 (April 19 2026) appears to have fixed the wedge but the daily restart is still in place as a safety net.
 - **python-dotenv**: `.env` loaded automatically in `manage.py`
 
 ## Management Commands
